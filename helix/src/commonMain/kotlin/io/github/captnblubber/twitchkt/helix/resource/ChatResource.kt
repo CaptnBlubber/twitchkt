@@ -15,6 +15,7 @@ import io.github.captnblubber.twitchkt.helix.model.SendMessageResponse
 import io.github.captnblubber.twitchkt.helix.model.SharedChatSession
 import io.github.captnblubber.twitchkt.helix.model.UserEmote
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -119,15 +120,16 @@ class ChatResource internal constructor(
         moderatorId: String,
         pageSize: Int = 1000,
     ): Flow<Chatter> =
-        http.paginate<Chatter>(
-            endpoint = "chat/chatters",
-            params =
-                listOf(
-                    "broadcaster_id" to broadcasterId,
-                    "moderator_id" to moderatorId,
-                ),
-            pageSize = pageSize,
-        )
+        http
+            .paginate<Chatter>(
+                endpoint = "chat/chatters",
+                params =
+                    listOf(
+                        "broadcaster_id" to broadcasterId,
+                        "moderator_id" to moderatorId,
+                    ),
+                pageSize = pageSize,
+            ).onStart { http.validateScopes(TwitchScope.MODERATOR_READ_CHATTERS) }
 
     /**
      * [Twitch API: Get Channel Emotes](https://dev.twitch.tv/docs/api/reference/#get-channel-emotes)
