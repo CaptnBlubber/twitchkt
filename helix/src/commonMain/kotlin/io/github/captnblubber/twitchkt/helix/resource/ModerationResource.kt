@@ -252,15 +252,43 @@ class ModerationResource internal constructor(
     /**
      * [Twitch API: Get Unban Requests](https://dev.twitch.tv/docs/api/reference/#get-unban-requests)
      *
-     * Gets a list of unban requests for a broadcaster's channel.
+     * Gets all unban requests for a broadcaster's channel.
+     * Automatically paginates through all results.
+     *
+     * @param broadcasterId the ID of the broadcaster whose channel is receiving unban requests.
+     * @param moderatorId the ID of the broadcaster or a user that has permission to moderate the broadcaster's unban requests. This ID must match the user ID in the user access token.
+     * @param status filter by a status: `pending`, `approved`, `denied`, `acknowledged`, `canceled`.
+     * @return a [Flow] of [UnbanRequestResponse] objects.
+     */
+    @RequiresScope(TwitchScope.MODERATOR_READ_UNBAN_REQUESTS)
+    fun getAllUnbanRequests(
+        broadcasterId: String,
+        moderatorId: String,
+        status: String = "pending",
+    ): Flow<UnbanRequestResponse> {
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                add("moderator_id" to moderatorId)
+                add("status" to status)
+            }
+        return http
+            .paginate<UnbanRequestResponse>("moderation/unban_requests", params)
+            .onStart { http.validateScopes(TwitchScope.MODERATOR_READ_UNBAN_REQUESTS) }
+    }
+
+    /**
+     * [Twitch API: Get Unban Requests](https://dev.twitch.tv/docs/api/reference/#get-unban-requests)
+     *
+     * Gets a single page of unban requests for a broadcaster's channel.
      *
      * @param broadcasterId the ID of the broadcaster whose channel is receiving unban requests.
      * @param moderatorId the ID of the broadcaster or a user that has permission to moderate the broadcaster's unban requests. This ID must match the user ID in the user access token.
      * @param status filter by a status: `pending`, `approved`, `denied`, `acknowledged`, `canceled`.
      * @param userId the ID used to filter what unban requests are returned.
-     * @param after cursor used to get the next page of results.
-     * @param first the maximum number of items to return per page in response.
-     * @return list of [UnbanRequestResponse] objects.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page. Null uses the API default.
+     * @return a [Page] of [UnbanRequestResponse] objects.
      */
     @RequiresScope(TwitchScope.MODERATOR_READ_UNBAN_REQUESTS)
     suspend fun getUnbanRequests(
@@ -268,22 +296,19 @@ class ModerationResource internal constructor(
         moderatorId: String,
         status: String = "pending",
         userId: String? = null,
-        after: String? = null,
-        first: Int = 20,
-    ): List<UnbanRequestResponse> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<UnbanRequestResponse> {
         http.validateScopes(TwitchScope.MODERATOR_READ_UNBAN_REQUESTS)
-        return http
-            .get<UnbanRequestResponse>(
-                "moderation/unban_requests",
-                buildList {
-                    add("broadcaster_id" to broadcasterId)
-                    add("moderator_id" to moderatorId)
-                    add("status" to status)
-                    userId?.let { add("user_id" to it) }
-                    after?.let { add("after" to it) }
-                    add("first" to first.toString())
-                },
-            ).data
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                add("moderator_id" to moderatorId)
+                add("status" to status)
+                userId?.let { add("user_id" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "moderation/unban_requests", params = params, pageSize = pageSize)
     }
 
     /**

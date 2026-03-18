@@ -246,6 +246,234 @@ class ModerationResourceTest :
             }
         }
 
+        val unbanRequestJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "req-1",
+                        "broadcaster_id": "123",
+                        "broadcaster_login": "streamer",
+                        "broadcaster_name": "Streamer",
+                        "user_id": "456",
+                        "user_login": "requester",
+                        "user_name": "Requester",
+                        "text": "please unban me",
+                        "status": "pending",
+                        "created_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val unbanRequestLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "req-2",
+                        "broadcaster_id": "123",
+                        "broadcaster_login": "streamer",
+                        "broadcaster_name": "Streamer",
+                        "user_id": "789",
+                        "user_login": "anotheruser",
+                        "user_name": "AnotherUser",
+                        "text": "sorry",
+                        "status": "pending",
+                        "created_at": "2024-02-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val unbanRequestSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "req-1",
+                        "broadcaster_id": "123",
+                        "broadcaster_login": "streamer",
+                        "broadcaster_name": "Streamer",
+                        "user_id": "456",
+                        "user_login": "requester",
+                        "user_name": "Requester",
+                        "text": "please unban me",
+                        "status": "pending",
+                        "created_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("UnbanRequests") {
+
+            When("getAllUnbanRequests is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val requests = resource.getAllUnbanRequests(broadcasterId = "123", moderatorId = "100").toList()
+
+                Then("it should call the moderation/unban_requests endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/unban_requests"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass broadcaster_id and moderator_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                    request.url.parameters["moderator_id"] shouldBe "100"
+                }
+
+                Then("it should pass the default status parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["status"] shouldBe "pending"
+                }
+
+                Then("it should deserialize the unban request") {
+                    requests.size shouldBe 1
+                    requests.first().id shouldBe "req-2"
+                    requests.first().userId shouldBe "789"
+                    requests.first().text shouldBe "sorry"
+                }
+            }
+
+            When("getUnbanRequests is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getUnbanRequests(broadcasterId = "123", moderatorId = "100")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the unban request data") {
+                    page.data.size shouldBe 1
+                    page.data.first().id shouldBe "req-1"
+                    page.data.first().text shouldBe "please unban me"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getUnbanRequests is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page =
+                    resource.getUnbanRequests(
+                        broadcasterId = "123",
+                        moderatorId = "100",
+                        cursor = "abc123",
+                    )
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getUnbanRequests is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getUnbanRequests(broadcasterId = "123", moderatorId = "100")
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getUnbanRequests is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getUnbanRequests(
+                    broadcasterId = "123",
+                    moderatorId = "100",
+                    pageSize = 50,
+                )
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+
+            When("getUnbanRequests is called with a custom status") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = unbanRequestJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getUnbanRequests(
+                    broadcasterId = "123",
+                    moderatorId = "100",
+                    status = "approved",
+                )
+
+                Then("it should pass the status parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["status"] shouldBe "approved"
+                }
+            }
+        }
+
         val bannedUserJson =
             """
             {
