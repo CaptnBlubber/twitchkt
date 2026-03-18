@@ -68,7 +68,7 @@ class FollowerResourceTest :
                         )
                     }
                 val resource = createResource(engine)
-                resource.listAll(broadcasterId = "123").toList()
+                val followers = resource.listAll(broadcasterId = "123").toList()
 
                 Then("it should call the channels/followers endpoint") {
                     val request = engine.requestHistory.first()
@@ -83,6 +83,44 @@ class FollowerResourceTest :
                 Then("it should pass the broadcaster_id parameter") {
                     val request = engine.requestHistory.first()
                     request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the follower") {
+                    followers.size shouldBe 1
+                    followers.first().userId shouldBe "456"
+                    followers.first().userLogin shouldBe "follower"
+                    followers.first().userName shouldBe "Follower"
+                }
+            }
+
+            When("called with a userId filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "user_id": "456",
+                                            "user_login": "follower",
+                                            "user_name": "Follower",
+                                            "followed_at": "2022-05-24T22:22:08Z"
+                                        }
+                                    ],
+                                    "pagination": {}
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.listAll(broadcasterId = "123", userId = "456").toList()
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "456"
                 }
             }
         }
@@ -141,6 +179,7 @@ class FollowerResourceTest :
                     page.data.first().userId shouldBe "456"
                     page.data.first().userLogin shouldBe "follower"
                     page.data.first().userName shouldBe "Follower"
+                    page.data.first().followedAt.toString() shouldBe "2022-05-24T22:22:08Z"
                 }
 
                 Then("it should return the next page cursor") {
@@ -173,11 +212,39 @@ class FollowerResourceTest :
                         )
                     }
                 val resource = createResource(engine)
-                resource.list(broadcasterId = "123", cursor = "abc123")
+                val page = resource.list(broadcasterId = "123", cursor = "abc123")
 
                 Then("it should pass the cursor as the after parameter") {
                     val request = engine.requestHistory.first()
                     request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the next cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [],
+                                    "pagination": {}
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.list(broadcasterId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
                 }
             }
 
