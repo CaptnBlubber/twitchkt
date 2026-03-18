@@ -1,0 +1,405 @@
+package io.github.captnblubber.twitchkt.helix.resource
+
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.toList
+import kotlinx.serialization.json.Json
+
+class ModerationResourceTest :
+    BehaviorSpec({
+
+        coroutineTestScope = true
+
+        val testToken = "test-token"
+        val testClientId = "test-client-id"
+        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
+
+        fun createResource(engine: MockEngine): ModerationResource {
+            val httpClient =
+                HttpClient(engine) {
+                    install(ContentNegotiation) {
+                        json(Json { ignoreUnknownKeys = true })
+                    }
+                }
+            val config =
+                TwitchKtConfig(
+                    clientId = testClientId,
+                    tokenProvider = TokenProvider { testToken },
+                )
+            return ModerationResource(HelixHttpClient(httpClient, config))
+        }
+
+        val singleItemJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "moderator",
+                        "user_name": "Moderator"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val lastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "789",
+                        "user_login": "lastmod",
+                        "user_name": "LastMod"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val secondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "moderator",
+                        "user_name": "Moderator"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("Moderators") {
+
+            When("getAllModerators is called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = lastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val moderators = resource.getAllModerators(broadcasterId = "123").toList()
+
+                Then("it should call the moderation/moderators endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/moderators"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the moderator") {
+                    moderators.size shouldBe 1
+                    moderators.first().userId shouldBe "789"
+                    moderators.first().userLogin shouldBe "lastmod"
+                    moderators.first().userName shouldBe "LastMod"
+                }
+            }
+
+            When("getModerators is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModerators(broadcasterId = "123")
+
+                Then("it should call the moderation/moderators endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/moderators"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the moderator data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "456"
+                    page.data.first().userName shouldBe "Moderator"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getModerators is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = secondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModerators(broadcasterId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getModerators is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = lastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModerators(broadcasterId = "123")
+
+                Then("it should return the data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "789"
+                }
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getModerators is called with userIds filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getModerators(broadcasterId = "123", userIds = listOf("456", "789"))
+
+                Then("it should pass the user_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("user_id") shouldBe listOf("456", "789")
+                }
+            }
+
+            When("getModerators is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getModerators(broadcasterId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
+        Given("VIPs") {
+
+            When("getAllVIPs is called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = lastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val vips = resource.getAllVIPs(broadcasterId = "123").toList()
+
+                Then("it should call the channels/vips endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/channels/vips"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the VIP") {
+                    vips.size shouldBe 1
+                    vips.first().userId shouldBe "789"
+                    vips.first().userLogin shouldBe "lastmod"
+                    vips.first().userName shouldBe "LastMod"
+                }
+            }
+
+            When("getVIPs is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getVIPs(broadcasterId = "123")
+
+                Then("it should call the channels/vips endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/channels/vips"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the VIP data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "456"
+                    page.data.first().userName shouldBe "Moderator"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getVIPs is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = secondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getVIPs(broadcasterId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getVIPs is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = lastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getVIPs(broadcasterId = "123")
+
+                Then("it should return the data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "789"
+                }
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getVIPs is called with userIds filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getVIPs(broadcasterId = "123", userIds = listOf("456", "789"))
+
+                Then("it should pass the user_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("user_id") shouldBe listOf("456", "789")
+                }
+            }
+
+            When("getVIPs is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = singleItemJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getVIPs(broadcasterId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+    })

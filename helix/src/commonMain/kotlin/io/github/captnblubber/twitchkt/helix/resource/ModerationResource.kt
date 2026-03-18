@@ -2,6 +2,7 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.AutoModCheckResult
@@ -450,27 +451,49 @@ class ModerationResource internal constructor(
      *
      * @param broadcasterId the ID of the broadcaster whose list of moderators you want to get. This ID must match the user ID in the access token.
      * @param userIds a list of user IDs used to filter the results. You may specify a maximum of 100 IDs.
-     * @param first the maximum number of items to return per page in the response. The minimum page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param after the cursor used to get the next page of results.
      * @return a [Flow] emitting each moderator.
      */
     @RequiresScope(TwitchScope.MODERATION_READ)
-    fun getModerators(
+    fun getAllModerators(
         broadcasterId: String,
         userIds: List<String> = emptyList(),
-        first: Int? = null,
-        after: String? = null,
     ): Flow<ChannelRoleUser> {
         val params =
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 userIds.forEach { add("user_id" to it) }
-                first?.let { add("first" to it.toString()) }
-                after?.let { add("after" to it) }
             }
         return http
             .paginate<ChannelRoleUser>("moderation/moderators", params)
             .onStart { http.validateScopes(TwitchScope.MODERATION_READ) }
+    }
+
+    /**
+     * [Twitch API: Get Moderators](https://dev.twitch.tv/docs/api/reference/#get-moderators)
+     *
+     * Fetches a single page of moderators for the broadcaster's chat room.
+     *
+     * @param broadcasterId the ID of the broadcaster whose list of moderators you want to get. This ID must match the user ID in the access token.
+     * @param userIds a list of user IDs used to filter the results. You may specify a maximum of 100 IDs.
+     * @param cursor the cursor used to get the next page of results. Pass `null` to get the first page.
+     * @param pageSize the maximum number of items to return (1–100). `null` uses the API default (20).
+     * @return a [Page] containing the moderators on this page and the cursor for the next page.
+     */
+    @RequiresScope(TwitchScope.MODERATION_READ)
+    suspend fun getModerators(
+        broadcasterId: String,
+        userIds: List<String> = emptyList(),
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<ChannelRoleUser> {
+        http.validateScopes(TwitchScope.MODERATION_READ)
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                userIds.forEach { add("user_id" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "moderation/moderators", params = params, pageSize = pageSize)
     }
 
     /**
@@ -531,27 +554,49 @@ class ModerationResource internal constructor(
      *
      * @param broadcasterId the ID of the broadcaster whose list of VIPs you want to get. This ID must match the user ID in the access token.
      * @param userIds filters the list for specific VIPs. You may specify a maximum of 100 IDs. Ignores the ID of those users in the list that aren't VIPs.
-     * @param first the maximum number of items to return per page in the response. The minimum page size is 1 item per page and the maximum is 100. The default is 20.
-     * @param after the cursor used to get the next page of results.
      * @return a [Flow] emitting each VIP.
      */
     @RequiresScope(TwitchScope.CHANNEL_READ_VIPS)
-    fun getVIPs(
+    fun getAllVIPs(
         broadcasterId: String,
         userIds: List<String> = emptyList(),
-        first: Int? = null,
-        after: String? = null,
     ): Flow<ChannelRoleUser> {
         val params =
             buildList {
-                userIds.forEach { add("user_id" to it) }
                 add("broadcaster_id" to broadcasterId)
-                first?.let { add("first" to it.toString()) }
-                after?.let { add("after" to it) }
+                userIds.forEach { add("user_id" to it) }
             }
         return http
             .paginate<ChannelRoleUser>("channels/vips", params)
             .onStart { http.validateScopes(TwitchScope.CHANNEL_READ_VIPS) }
+    }
+
+    /**
+     * [Twitch API: Get VIPs](https://dev.twitch.tv/docs/api/reference/#get-vips)
+     *
+     * Fetches a single page of VIPs for the broadcaster's channel.
+     *
+     * @param broadcasterId the ID of the broadcaster whose list of VIPs you want to get. This ID must match the user ID in the access token.
+     * @param userIds filters the list for specific VIPs. You may specify a maximum of 100 IDs.
+     * @param cursor the cursor used to get the next page of results. Pass `null` to get the first page.
+     * @param pageSize the maximum number of items to return (1–100). `null` uses the API default (20).
+     * @return a [Page] containing the VIPs on this page and the cursor for the next page.
+     */
+    @RequiresScope(TwitchScope.CHANNEL_READ_VIPS)
+    suspend fun getVIPs(
+        broadcasterId: String,
+        userIds: List<String> = emptyList(),
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<ChannelRoleUser> {
+        http.validateScopes(TwitchScope.CHANNEL_READ_VIPS)
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                userIds.forEach { add("user_id" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "channels/vips", params = params, pageSize = pageSize)
     }
 
     /**
