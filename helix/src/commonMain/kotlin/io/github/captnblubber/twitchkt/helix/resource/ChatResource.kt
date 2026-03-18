@@ -401,34 +401,52 @@ class ChatResource internal constructor(
     /**
      * [Twitch API: Get User Emotes](https://dev.twitch.tv/docs/api/reference/#get-user-emotes)
      *
-     * Retrieves emotes available to the user across all channels. The user token in the request
-     * identifies the user.
+     * Gets all emotes that the specified Twitch user has access to.
+     * Automatically paginates through all results.
      *
      * @param userId the ID of the user. This ID must match the user ID in the user access token.
-     * @param after the cursor used to get the next page of results. The Pagination object in
-     * the response contains the cursor's value.
      * @param broadcasterId the User ID of a broadcaster you wish to get follower emotes of.
-     * Using this query parameter will guarantee inclusion of the broadcaster's follower emotes
-     * in the response body. If the user is not following this broadcaster, follower emotes will
-     * not appear in the response body.
-     * @return the list of emotes the user has access to.
+     * @return a [Flow] of [UserEmote] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_EMOTES)
+    fun getAllUserEmotes(
+        userId: String,
+        broadcasterId: String? = null,
+    ): Flow<UserEmote> {
+        val params =
+            buildList {
+                add("user_id" to userId)
+                broadcasterId?.let { add("broadcaster_id" to it) }
+            }
+        return http
+            .paginate<UserEmote>("chat/emotes/user", params)
+            .onStart { http.validateScopes(TwitchScope.USER_READ_EMOTES) }
+    }
+
+    /**
+     * [Twitch API: Get User Emotes](https://dev.twitch.tv/docs/api/reference/#get-user-emotes)
+     *
+     * Gets a single page of emotes that the specified Twitch user has access to.
+     *
+     * @param userId the ID of the user. This ID must match the user ID in the user access token.
+     * @param cursor the cursor used to get the next page of results.
+     * @param broadcasterId the User ID of a broadcaster you wish to get follower emotes of.
+     * @return a [Page] of [UserEmote] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_EMOTES)
     suspend fun getUserEmotes(
         userId: String,
-        after: String? = null,
+        cursor: String? = null,
         broadcasterId: String? = null,
-    ): List<UserEmote> {
+    ): Page<UserEmote> {
         http.validateScopes(TwitchScope.USER_READ_EMOTES)
-        return http
-            .get<UserEmote>(
-                "chat/emotes/user",
-                buildList {
-                    add("user_id" to userId)
-                    after?.let { add("after" to it) }
-                    broadcasterId?.let { add("broadcaster_id" to it) }
-                },
-            ).data
+        val params =
+            buildList {
+                add("user_id" to userId)
+                cursor?.let { add("after" to it) }
+                broadcasterId?.let { add("broadcaster_id" to it) }
+            }
+        return http.getPage(endpoint = "chat/emotes/user", params = params)
     }
 }
 
