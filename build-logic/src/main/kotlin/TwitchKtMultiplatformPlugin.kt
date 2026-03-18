@@ -12,6 +12,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             apply(plugin = "org.jetbrains.kotlin.multiplatform")
+            apply(plugin = "org.jetbrains.dokka")
             apply(plugin = "twitchkt.spotless")
 
             val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")

@@ -144,6 +144,8 @@ val games = helix.search.categories(query = "Minecraft", first = 5)
 
 Paginated methods return `Flow<T>` and fetch all pages automatically using cursor-based pagination.
 
+For full method signatures, parameters, and response models, see the [API documentation](https://captnblubber.github.io/twitchkt/).
+
 ## Scope Validation
 
 By default, TwitchKt relies on the Twitch API to reject requests missing required scopes (HTTP 403). Opt in to **proactive validation** by supplying a `ScopeProvider`:

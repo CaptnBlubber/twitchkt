@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.plugin.kotlin)
     implementation(libs.plugin.spotless)
     implementation(libs.plugin.vanniktech.publish)
+    implementation(libs.plugin.dokka)
 }
 
 tasks {
