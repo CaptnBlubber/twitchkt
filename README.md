@@ -4,7 +4,7 @@ Kotlin Multiplatform Twitch API library. Provides typed, coroutine-native client
 
 ## Features
 
-- Kotlin Multiplatform (JVM, JS, Wasm, Native targets via `commonMain`). The JVM target bundles Ktor CIO as its engine; JS/Wasm consumers must supply their own Ktor engine (e.g. `ktor-client-js`).
+- Kotlin Multiplatform (JVM, JS, Wasm targets via `commonMain`)
 - Typed suspend functions for all Helix endpoints
 - `Flow`-based cursor pagination — emit all pages without manual cursor management
 - EventSub WebSocket with automatic reconnect and keepalive management
@@ -29,96 +29,111 @@ Kotlin Multiplatform Twitch API library. Provides typed, coroutine-native client
 | [`twitchkt-logging-kermit`](logging-kermit/) | `TwitchKtLogger` implementation backed by Kermit |
 | [`twitchkt-bom`](bom/) | BOM/platform artifact for version alignment |
 
-## Dependency Graph
-
-```mermaid
-graph BT
-    logging[twitchkt-logging]
-    core[twitchkt-core] --> logging
-    auth[twitchkt-auth] --> core
-    helix[twitchkt-helix] --> core
-    eventsub[twitchkt-eventsub] --> core
-    eventsub --> helix
-    irc[twitchkt-irc] --> core
-    logging-kermit[twitchkt-logging-kermit] --> logging
-```
-
 ## Getting Started
 
-Import the BOM to align all module versions, then declare only the modules you need:
+TwitchKt uses [Ktor](https://ktor.io) for all HTTP and WebSocket communication. You provide the `HttpClient` so you stay in control of the engine, timeouts, and plugins — TwitchKt does not force a specific setup on you.
+
+### 1. Add dependencies
+
+Use the BOM to align all module versions, then declare the modules and Ktor plugins you need:
 
 ```kotlin
 dependencies {
+    // BOM — manages all twitchkt module versions
     implementation(platform("io.github.captnblubber:twitchkt-bom:VERSION"))
 
-    implementation("io.github.captnblubber:twitchkt-core:VERSION")
-    implementation("io.github.captnblubber:twitchkt-helix:VERSION")
-    implementation("io.github.captnblubber:twitchkt-eventsub:VERSION")
-    implementation("io.github.captnblubber:twitchkt-auth:VERSION")
+    // TwitchKt modules (no version needed with BOM)
+    implementation("io.github.captnblubber:twitchkt-core")
+    implementation("io.github.captnblubber:twitchkt-helix")       // Helix REST API
+    implementation("io.github.captnblubber:twitchkt-eventsub")    // EventSub WebSocket
+    implementation("io.github.captnblubber:twitchkt-auth")        // OAuth2 flows
 
     // Optional: Kermit logging bridge
-    implementation("io.github.captnblubber:twitchkt-logging-kermit:VERSION")
+    implementation("io.github.captnblubber:twitchkt-logging-kermit")
+
+    // Ktor — pick an engine for your platform
+    val ktorVersion = "3.x.x"
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")                        // JVM
+    // implementation("io.ktor:ktor-client-js:$ktorVersion")                      // JS/Wasm
+
+    // Ktor plugins required by TwitchKt
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")                 // EventSub only
 }
 ```
 
-With the BOM applied, individual module declarations do not need a version:
+### 2. Create an HttpClient
+
+TwitchKt requires `ContentNegotiation` with JSON. If you use EventSub, also install `WebSockets`:
 
 ```kotlin
-dependencies {
-    implementation(platform("io.github.captnblubber:twitchkt-bom:1.0.0"))
-    implementation("io.github.captnblubber:twitchkt-helix")
-    implementation("io.github.captnblubber:twitchkt-eventsub")
+val httpClient = HttpClient(CIO) {
+    install(ContentNegotiation) {
+        json()
+    }
+    install(WebSockets)
 }
 ```
 
-## Quick Start
-
-### Configuration
+### 3. Configure TwitchKt
 
 ```kotlin
 val config = TwitchKtConfig(
     clientId = "your_client_id",
     tokenProvider = { myTokenStore.getAccessToken() },
 )
-
-val httpClient = HttpClient(CIO) {
-    install(ContentNegotiation) { json() }
-    install(WebSockets)
-}
 ```
 
-### Helix API
+The `tokenProvider` lambda is called on every request, so you can rotate or refresh tokens transparently without rebuilding the client.
+
+## Quick Start
+
+### Helix REST API
 
 ```kotlin
 val helix = TwitchHelix(httpClient, config)
+```
 
-// Get user info
+Fetch a user, check if a stream is live, or update channel info — all as typed suspend functions:
+
+```kotlin
+// Look up a user by login name
 val users = helix.users.getUsers(logins = listOf("captnblubber"))
 
-// Check if a channel is live
+// Check if a channel is currently live
 val streams = helix.streams.getStreams(userLogins = listOf("captnblubber"))
 
-// Update stream title (requires channel:manage:broadcast)
+// Update the stream title (requires channel:manage:broadcast scope)
 helix.channels.update(
     broadcasterId = "123456",
     request = UpdateChannelRequest(title = "New stream title"),
 )
+```
 
-// Paginated endpoints return Flow — all pages fetched automatically
+Paginated endpoints return a `Flow` — TwitchKt fetches subsequent pages automatically as you collect:
+
+```kotlin
 helix.followers.list(broadcasterId = "123456").collect { follower ->
     println(follower.userLogin)
 }
 ```
 
-### EventSub
+### EventSub WebSocket
+
+EventSub delivers real-time Twitch events over a managed WebSocket connection. Subscribe to the events you care about, connect, then collect from the `events` flow:
 
 ```kotlin
 val eventSub = TwitchEventSub(httpClient, config, helix.subscriptions)
 
+// Register subscriptions before connecting
 eventSub.subscribe(EventSubSubscriptionType.ChannelFollow(broadcasterId, moderatorId))
 eventSub.subscribe(EventSubSubscriptionType.StreamOnline(broadcasterId))
+
+// Connect — manages keepalives and reconnects automatically
 eventSub.connect(coroutineScope)
 
+// All incoming events arrive on this flow as typed sealed classes
 eventSub.events.collect { event ->
     when (event) {
         is ChannelFollow -> println("New follower: ${event.userName}")
@@ -131,23 +146,27 @@ eventSub.events.collect { event ->
 
 ### Authentication
 
+If you need to handle the OAuth2 flow yourself rather than providing a static token:
+
 ```kotlin
 val auth = TwitchAuth(httpClient, clientId = "your_client_id", clientSecret = "your_client_secret")
 
-// Generate authorization URL
+// Build the URL to redirect users to for authorization
 val url = auth.authorizationUrl(
     scopes = setOf(TwitchScope.CHAT_READ, TwitchScope.CHANNEL_READ_SUBSCRIPTIONS),
     redirectUri = "http://localhost:8080/callback",
 )
 
-// Exchange code for tokens
+// Exchange the code Twitch returns for an access + refresh token pair
 val tokens = auth.exchangeCode(code = "abc123", redirectUri = "http://localhost:8080/callback")
 
-// Refresh when expired
+// Refresh when the access token expires
 val newTokens = auth.refresh(refreshToken = tokens.refreshToken)
 ```
 
 ### Error Handling
+
+All Twitch API errors are thrown as typed `TwitchApiException` subclasses:
 
 ```kotlin
 try {
@@ -155,7 +174,7 @@ try {
 } catch (e: TwitchApiException.RateLimited) {
     delay(e.retryAfterMs)
 } catch (e: TwitchApiException.Forbidden) {
-    // missing OAuth scope
+    // Missing OAuth scope — check @RequiresScope on the method
 }
 ```
 
@@ -163,9 +182,9 @@ try {
 
 Integration tests run against Twitch CLI mock servers and are excluded from the normal test run.
 
-**Prerequisites:** Install the [Twitch CLI](https://dev.twitch.tv/docs/cli/) and ensure it is on `$PATH`. Ports 8080 and 8081 must be free.
+**Prerequisites:** Install the [Twitch CLI](https://dev.twitch.tv/docs/cli/) and ensure `twitch` is on `$PATH`. Ports 8080 and 8081 must be free.
 
-Start the mock API server:
+Start the mock API server in a separate terminal:
 
 ```bash
 twitch mock-api start
@@ -181,9 +200,25 @@ Then run the integration tests for the desired module:
 ./gradlew :eventsub:jvmTest -DintegrationTest=true
 ```
 
-See the [eventsub](eventsub/) and [helix](helix/) module READMEs for details on what each suite covers.
+See the [helix](helix/) and [eventsub](eventsub/) module READMEs for details on what each suite covers.
 
 ## Architecture
+
+### Module Dependency Graph
+
+```mermaid
+graph BT
+    logging[twitchkt-logging]
+    core[twitchkt-core] --> logging
+    auth[twitchkt-auth] --> core
+    helix[twitchkt-helix] --> core
+    eventsub[twitchkt-eventsub] --> core
+    eventsub --> helix
+    irc[twitchkt-irc] --> core
+    logging-kermit[twitchkt-logging-kermit] --> logging
+```
+
+### Internal Structure
 
 ```mermaid
 graph TD
@@ -213,6 +248,9 @@ graph TD
 ## Dependencies
 
 - `ktor-client-core` + `ktor-client-websockets` + `ktor-client-content-negotiation` — HTTP and WebSocket transport
-- `ktor-client-cio` (JVM) — CIO engine
 - `ktor-serialization-kotlinx-json` + `kotlinx-serialization-json` — JSON serialization
 - `kotlinx-coroutines-core` — Structured concurrency and Flow
+
+## Support
+
+If you find TwitchKt useful, the best way to support the project is to drop a follow on the Twitch channel where it was built — [twitch.tv/captnblubber](https://twitch.tv/captnblubber). If you have Amazon Prime, a free Prime sub goes a long way too.
