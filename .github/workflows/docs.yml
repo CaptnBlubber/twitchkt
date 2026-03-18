@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Generate Dokka docs
-        run: ./gradlew dokkaHtmlMultiModule
+        run: ./gradlew dokkaGeneratePublicationHtml
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/dokka/html
