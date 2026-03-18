@@ -3,6 +3,7 @@ package io.github.captnblubber.twitchkt.helix.internal
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.error.TwitchApiException
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -235,6 +236,20 @@ internal class HelixHttpClient(
                 cursor = response.pagination?.cursor
             } while (cursor != null)
         }
+
+    suspend inline fun <reified T> getPage(
+        endpoint: String,
+        params: List<Pair<String, String>> = emptyList(),
+        pageSize: Int? = null,
+    ): Page<T> {
+        val fullParams =
+            buildList {
+                addAll(params)
+                pageSize?.let { add("first" to it.toString()) }
+            }
+        val response = get<T>(endpoint, fullParams)
+        return Page(data = response.data, cursor = response.pagination?.cursor)
+    }
 
     @PublishedApi
     internal suspend inline fun <reified T> handleResponse(response: HttpResponse): TwitchResponse<T> {
