@@ -3,10 +3,12 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.EventSubSubscriptionType
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.EventSubSubscription
 import io.github.captnblubber.twitchkt.helix.model.Subscription
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
@@ -32,11 +34,36 @@ class SubscriptionResource internal constructor(
      * @return a [Flow] emitting each subscription.
      */
     @RequiresScope(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
-    fun list(broadcasterId: String): Flow<Subscription> {
+    fun listAll(broadcasterId: String): Flow<Subscription> {
         val params = listOf("broadcaster_id" to broadcasterId)
         return http
             .paginate<Subscription>("subscriptions", params)
             .onStart { http.validateScopes(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS) }
+    }
+
+    /**
+     * [Twitch API: Get Broadcaster Subscriptions](https://dev.twitch.tv/docs/api/reference/#get-broadcaster-subscriptions)
+     *
+     * Fetches a single page of subscriptions.
+     *
+     * @param broadcasterId the broadcaster's ID. This ID must match the user ID in the access token.
+     * @param cursor the cursor used to get the next page of results. Pass `null` to get the first page.
+     * @param pageSize the maximum number of items to return (1–100). `null` uses the API default (20).
+     * @return a [Page] containing the subscriptions on this page and the cursor for the next page.
+     */
+    @RequiresScope(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
+    suspend fun list(
+        broadcasterId: String,
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Subscription> {
+        http.validateScopes(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "subscriptions", params = params, pageSize = pageSize)
     }
 
     /**
@@ -97,7 +124,7 @@ class SubscriptionResource internal constructor(
         return try {
             http.get<Subscription>("subscriptions/user", params).data.firstOrNull()
         } catch (
-            @Suppress("SwallowedException") e: io.github.captnblubber.twitchkt.error.TwitchApiException.NotFound,
+            @Suppress("SwallowedException") e: TwitchApiException.NotFound,
         ) {
             null
         }
