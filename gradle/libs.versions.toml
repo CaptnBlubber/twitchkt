@@ -1,0 +1,44 @@
+[versions]
+kotest = "6.1.2"
+mockk = "1.14.9"
+kotlin = "2.3.10"
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.10.0"
+ktor = "3.3.3"
+kermit = "2.1.0"
+spotless = "8.3.0"
+vanniktech-publish = "0.30.0"
+
+[libraries]
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-framework-symbol-processor = { module = "io.kotest:kotest-framework-symbol-processor", version.ref = "kotest" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5-jvm", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk-jvm", version.ref = "mockk" }
+
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-serializationJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+ktor-clientCore = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-clientCIO = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-clientContentNegotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-clientMock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+ktor-clientWebSockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
+ktor-serializationKotlinxJson = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
+
+plugin-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+plugin-spotless = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
+plugin-vanniktech-publish = { group = "com.vanniktech", name = "gradle-maven-publish-plugin", version.ref = "vanniktech-publish" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
+
+twitchkt-multiplatform = { id = "twitchkt.multiplatform" }
+twitchkt-publish = { id = "twitchkt.publish" }
+twitchkt-spotless = { id = "twitchkt.spotless" }

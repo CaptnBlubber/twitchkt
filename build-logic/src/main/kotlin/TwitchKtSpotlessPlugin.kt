@@ -1,0 +1,24 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.configure
+
+class TwitchKtSpotlessPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        with(target) {
+            pluginManager.apply("com.diffplug.spotless")
+            extensions.configure<SpotlessExtension> {
+                kotlin {
+                    target("**/*.kt")
+                    targetExclude("**/build/**/*.kt")
+                    ktlint()
+                        .setEditorConfigPath(rootProject.file(".editorconfig"))
+                }
+                kotlinGradle {
+                    target("*.gradle.kts")
+                    ktlint()
+                }
+            }
+        }
+    }
+}
