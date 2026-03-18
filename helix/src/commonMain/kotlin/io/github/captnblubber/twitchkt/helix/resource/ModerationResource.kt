@@ -349,33 +349,54 @@ class ModerationResource internal constructor(
     /**
      * [Twitch API: Get Blocked Terms](https://dev.twitch.tv/docs/api/reference/#get-blocked-terms)
      *
-     * Gets the broadcaster's list of non-private, blocked words or phrases. These are the terms
-     * that the broadcaster or moderator added manually or that were denied by AutoMod.
+     * Gets all blocked terms that the broadcaster created.
+     * Automatically paginates through all results.
      *
      * @param broadcasterId the ID of the broadcaster whose blocked terms you're getting.
      * @param moderatorId the ID of the broadcaster or a user that has permission to moderate the broadcaster's chat room. This ID must match the user ID in the user access token.
-     * @param first the maximum number of items to return per page in the response. The minimum page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param after the cursor used to get the next page of results.
-     * @return list of [BlockedTerm] objects.
+     * @return a [Flow] of [BlockedTerm] objects.
+     */
+    @RequiresScope(TwitchScope.MODERATOR_READ_BLOCKED_TERMS)
+    fun getAllBlockedTerms(
+        broadcasterId: String,
+        moderatorId: String,
+    ): Flow<BlockedTerm> {
+        val params =
+            listOf(
+                "broadcaster_id" to broadcasterId,
+                "moderator_id" to moderatorId,
+            )
+        return http
+            .paginate<BlockedTerm>("moderation/blocked_terms", params)
+            .onStart { http.validateScopes(TwitchScope.MODERATOR_READ_BLOCKED_TERMS) }
+    }
+
+    /**
+     * [Twitch API: Get Blocked Terms](https://dev.twitch.tv/docs/api/reference/#get-blocked-terms)
+     *
+     * Gets a single page of blocked terms that the broadcaster created.
+     *
+     * @param broadcasterId the ID of the broadcaster whose blocked terms you're getting.
+     * @param moderatorId the ID of the broadcaster or a user that has permission to moderate the broadcaster's chat room. This ID must match the user ID in the user access token.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [BlockedTerm] objects.
      */
     @RequiresScope(TwitchScope.MODERATOR_READ_BLOCKED_TERMS)
     suspend fun getBlockedTerms(
         broadcasterId: String,
         moderatorId: String,
-        first: Int = 20,
-        after: String? = null,
-    ): List<BlockedTerm> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<BlockedTerm> {
         http.validateScopes(TwitchScope.MODERATOR_READ_BLOCKED_TERMS)
-        return http
-            .get<BlockedTerm>(
-                "moderation/blocked_terms",
-                buildList {
-                    add("broadcaster_id" to broadcasterId)
-                    add("moderator_id" to moderatorId)
-                    add("first" to first.toString())
-                    after?.let { add("after" to it) }
-                },
-            ).data
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                add("moderator_id" to moderatorId)
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "moderation/blocked_terms", params = params, pageSize = pageSize)
     }
 
     /**

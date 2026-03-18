@@ -474,6 +474,185 @@ class ModerationResourceTest :
             }
         }
 
+        val blockedTermJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "123",
+                        "moderator_id": "100",
+                        "id": "term-1",
+                        "text": "badword",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "updated_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val blockedTermLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "123",
+                        "moderator_id": "100",
+                        "id": "term-2",
+                        "text": "anotherbad",
+                        "created_at": "2024-02-01T00:00:00Z",
+                        "updated_at": "2024-02-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val blockedTermSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "123",
+                        "moderator_id": "100",
+                        "id": "term-1",
+                        "text": "badword",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "updated_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("BlockedTerms") {
+
+            When("getAllBlockedTerms is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedTermLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val terms = resource.getAllBlockedTerms(broadcasterId = "123", moderatorId = "100").toList()
+
+                Then("it should call the moderation/blocked_terms endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/blocked_terms"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass broadcaster_id and moderator_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                    request.url.parameters["moderator_id"] shouldBe "100"
+                }
+
+                Then("it should deserialize the blocked term") {
+                    terms.size shouldBe 1
+                    terms.first().id shouldBe "term-2"
+                    terms.first().text shouldBe "anotherbad"
+                }
+            }
+
+            When("getBlockedTerms is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedTermJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockedTerms(broadcasterId = "123", moderatorId = "100")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the blocked term data") {
+                    page.data.size shouldBe 1
+                    page.data.first().id shouldBe "term-1"
+                    page.data.first().text shouldBe "badword"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getBlockedTerms is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedTermSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockedTerms(broadcasterId = "123", moderatorId = "100", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getBlockedTerms is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedTermLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockedTerms(broadcasterId = "123", moderatorId = "100")
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getBlockedTerms is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedTermJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getBlockedTerms(broadcasterId = "123", moderatorId = "100", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
         val bannedUserJson =
             """
             {
