@@ -869,6 +869,175 @@ class ModerationResourceTest :
             }
         }
 
+        val moderatedChannelJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "456",
+                        "broadcaster_login": "channelone",
+                        "broadcaster_name": "ChannelOne"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val moderatedChannelLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "789",
+                        "broadcaster_login": "channeltwo",
+                        "broadcaster_name": "ChannelTwo"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val moderatedChannelSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "456",
+                        "broadcaster_login": "channelone",
+                        "broadcaster_name": "ChannelOne"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("ModeratedChannels") {
+
+            When("getAllModeratedChannels is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = moderatedChannelLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val channels = resource.getAllModeratedChannels(userId = "123").toList()
+
+                Then("it should call the moderation/channels endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/channels"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the moderated channel") {
+                    channels.size shouldBe 1
+                    channels.first().broadcasterId shouldBe "789"
+                    channels.first().broadcasterLogin shouldBe "channeltwo"
+                }
+            }
+
+            When("getModeratedChannels is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = moderatedChannelJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModeratedChannels(userId = "123")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the moderated channel data") {
+                    page.data.size shouldBe 1
+                    page.data.first().broadcasterId shouldBe "456"
+                    page.data.first().broadcasterName shouldBe "ChannelOne"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getModeratedChannels is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = moderatedChannelSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModeratedChannels(userId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getModeratedChannels is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = moderatedChannelLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getModeratedChannels(userId = "123")
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getModeratedChannels is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = moderatedChannelJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getModeratedChannels(userId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
         Given("VIPs") {
 
             When("getAllVIPs is called with a broadcaster ID") {

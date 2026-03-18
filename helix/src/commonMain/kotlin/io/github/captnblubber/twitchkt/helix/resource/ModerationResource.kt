@@ -484,29 +484,43 @@ class ModerationResource internal constructor(
     /**
      * [Twitch API: Get Moderated Channels](https://dev.twitch.tv/docs/api/reference/#get-moderated-channels)
      *
-     * Gets a list of channels that the specified user has moderator privileges in.
+     * Gets all channels that the specified user has moderator privileges in.
+     * Automatically paginates through all results.
      *
      * @param userId a user's ID. Returns the list of channels that this user has moderator privileges in. This ID must match the user ID in the user OAuth token.
-     * @param after the cursor used to get the next page of results.
-     * @param first the maximum number of items to return per page in the response. Minimum page size is 1 item per page and the maximum is 100. The default is 20.
-     * @return list of [ModeratedChannel] objects.
+     * @return a [Flow] of [ModeratedChannel] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_MODERATED_CHANNELS)
+    fun getAllModeratedChannels(userId: String): Flow<ModeratedChannel> {
+        val params = listOf("user_id" to userId)
+        return http
+            .paginate<ModeratedChannel>("moderation/channels", params)
+            .onStart { http.validateScopes(TwitchScope.USER_READ_MODERATED_CHANNELS) }
+    }
+
+    /**
+     * [Twitch API: Get Moderated Channels](https://dev.twitch.tv/docs/api/reference/#get-moderated-channels)
+     *
+     * Gets a single page of channels that the specified user has moderator privileges in.
+     *
+     * @param userId a user's ID. Returns the list of channels that this user has moderator privileges in. This ID must match the user ID in the user OAuth token.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [ModeratedChannel] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_MODERATED_CHANNELS)
     suspend fun getModeratedChannels(
         userId: String,
-        after: String? = null,
-        first: Int = 20,
-    ): List<ModeratedChannel> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<ModeratedChannel> {
         http.validateScopes(TwitchScope.USER_READ_MODERATED_CHANNELS)
-        return http
-            .get<ModeratedChannel>(
-                "moderation/channels",
-                buildList {
-                    add("user_id" to userId)
-                    after?.let { add("after" to it) }
-                    add("first" to first.toString())
-                },
-            ).data
+        val params =
+            buildList {
+                add("user_id" to userId)
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "moderation/channels", params = params, pageSize = pageSize)
     }
 
     /**
