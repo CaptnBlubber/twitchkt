@@ -69,35 +69,30 @@ class SubscriptionResource internal constructor(
     /**
      * [Twitch API: Get Broadcaster Subscriptions](https://dev.twitch.tv/docs/api/reference/#get-broadcaster-subscriptions)
      *
-     * Gets a list of users that subscribe to the specified broadcaster. Use this method for
-     * filtered queries or when you need a single page of results.
+     * Gets a single page of the broadcaster's subscribers. The list is sorted by the date
+     * and time each user subscribed (newest first).
      *
      * @param broadcasterId the broadcaster's ID. This ID must match the user ID in the access token.
-     * @param userIds filters the list to include only the specified subscribers. You may specify
-     * a maximum of 100 subscriber IDs. Do not specify [after] or [before] if you set this parameter.
-     * @param first the maximum number of items to return per page (1-100, default 20).
-     * @param after the cursor used to get the next page of results. Do not specify if you set [userIds].
-     * @param before the cursor used to get the previous page of results. Do not specify if you set [userIds].
-     * @return the list of subscriptions.
+     * @param userIds filters the list to include only the specified subscribers. You may specify a maximum of 100 user IDs. Do not specify [cursor] when using this filter.
+     * @param cursor the cursor used to get the next page of results. Do not specify if you set [userIds].
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [Subscription] objects.
      */
     @RequiresScope(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
     suspend fun get(
         broadcasterId: String,
         userIds: List<String> = emptyList(),
-        first: Int = 20,
-        after: String? = null,
-        before: String? = null,
-    ): List<Subscription> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Subscription> {
         http.validateScopes(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
         val params =
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 userIds.forEach { add("user_id" to it) }
-                add("first" to first.toString())
-                after?.let { add("after" to it) }
-                before?.let { add("before" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<Subscription>("subscriptions", params).data
+        return http.getPage(endpoint = "subscriptions", params = params, pageSize = pageSize)
     }
 
     /**
