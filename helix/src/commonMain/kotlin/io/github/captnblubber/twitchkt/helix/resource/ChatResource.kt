@@ -2,6 +2,7 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.ChannelEmote
@@ -75,41 +76,33 @@ class ChatResource internal constructor(
     /**
      * [Twitch API: Get Chatters](https://dev.twitch.tv/docs/api/reference/#get-chatters)
      *
-     * Gets the list of users that are connected to the broadcaster's chat session.
+     * Fetches a single page of users connected to the broadcaster's chat session.
      *
      * **NOTE:** There is a delay between when users join and leave a chat and when the list
      * is updated accordingly.
      *
-     * To determine whether a user is a moderator or VIP, use the [getChannelBadges] endpoint.
-     * You can also check the user's badges in chat messages.
-     *
      * @param broadcasterId the ID of the broadcaster whose list of chatters you want to get.
      * @param moderatorId the ID of the broadcaster or one of the broadcaster's moderators.
      * This ID must match the user ID in the user access token.
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 1000. The default is 100.
-     * @param after the cursor used to get the next page of results. The Pagination object in
-     * the response contains the cursor's value.
-     * @return the list of users connected to the broadcaster's chat room.
+     * @param cursor the cursor used to get the next page of results. Pass `null` to get the first page.
+     * @param pageSize the maximum number of items to return (1–1000). `null` uses the API default (100).
+     * @return a [Page] containing the chatters on this page and the cursor for the next page.
      */
     @RequiresScope(TwitchScope.MODERATOR_READ_CHATTERS)
     suspend fun getChatters(
         broadcasterId: String,
         moderatorId: String,
-        first: Int = 100,
-        after: String? = null,
-    ): List<Chatter> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Chatter> {
         http.validateScopes(TwitchScope.MODERATOR_READ_CHATTERS)
-        return http
-            .get<Chatter>(
-                "chat/chatters",
-                buildList {
-                    add("broadcaster_id" to broadcasterId)
-                    add("moderator_id" to moderatorId)
-                    add("first" to first.toString())
-                    after?.let { add("after" to it) }
-                },
-            ).data
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                add("moderator_id" to moderatorId)
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "chat/chatters", params = params, pageSize = pageSize)
     }
 
     /**
