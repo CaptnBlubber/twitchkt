@@ -1,6 +1,5 @@
 package io.github.captnblubber.twitchkt.helix
 
-import io.ktor.client.HttpClient
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.resource.AdResource
@@ -28,6 +27,7 @@ import io.github.captnblubber.twitchkt.helix.resource.TeamResource
 import io.github.captnblubber.twitchkt.helix.resource.UserResource
 import io.github.captnblubber.twitchkt.helix.resource.VideoResource
 import io.github.captnblubber.twitchkt.helix.resource.WhisperResource
+import io.ktor.client.HttpClient
 
 class TwitchHelix(
     httpClient: HttpClient,

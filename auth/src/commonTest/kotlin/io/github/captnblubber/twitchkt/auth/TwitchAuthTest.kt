@@ -1,5 +1,6 @@
 package io.github.captnblubber.twitchkt.auth
 
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -18,7 +19,6 @@ import io.ktor.http.decodeURLPart
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.error.TwitchApiException
 
 class TwitchAuthTest :
     BehaviorSpec({

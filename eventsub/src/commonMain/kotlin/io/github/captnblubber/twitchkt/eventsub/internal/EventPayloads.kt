@@ -1,8 +1,5 @@
 package io.github.captnblubber.twitchkt.eventsub.internal
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
 import io.github.captnblubber.twitchkt.eventsub.model.AnnouncementNotification
 import io.github.captnblubber.twitchkt.eventsub.model.BitsBadgeTierNotification
 import io.github.captnblubber.twitchkt.eventsub.model.BitsUseType
@@ -42,6 +39,9 @@ import io.github.captnblubber.twitchkt.eventsub.model.SharedChatParticipant
 import io.github.captnblubber.twitchkt.eventsub.model.SubGiftNotification
 import io.github.captnblubber.twitchkt.eventsub.model.SubNotification
 import io.github.captnblubber.twitchkt.eventsub.model.VotingSettings
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
 @Serializable

@@ -1,9 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onStart
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
@@ -17,6 +13,10 @@ import io.github.captnblubber.twitchkt.helix.model.ModeratedChannel
 import io.github.captnblubber.twitchkt.helix.model.ShieldModeStatus
 import io.github.captnblubber.twitchkt.helix.model.SuspiciousUserStatus
 import io.github.captnblubber.twitchkt.helix.model.UnbanRequestResponse
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class ModerationResource internal constructor(
     private val http: HelixHttpClient,

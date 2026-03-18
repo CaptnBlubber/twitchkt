@@ -1,5 +1,8 @@
 package io.github.captnblubber.twitchkt.helix.integration
 
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.helix.TwitchHelix
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.string.shouldNotBeBlank
@@ -8,9 +11,6 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.TwitchHelix
 
 class HelixIntegrationTest :
     FunSpec({

@@ -1,7 +1,7 @@
 package io.github.captnblubber.twitchkt.helix.internal
 
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.error.TwitchApiException
+import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class TwitchResponse<T>(

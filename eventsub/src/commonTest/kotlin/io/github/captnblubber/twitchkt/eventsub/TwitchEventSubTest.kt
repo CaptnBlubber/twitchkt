@@ -1,5 +1,9 @@
 package io.github.captnblubber.twitchkt.eventsub
 
+import io.github.captnblubber.twitchkt.ConnectionState
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.helix.TwitchHelix
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
@@ -11,10 +15,6 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.HttpStatusCode
-import io.github.captnblubber.twitchkt.ConnectionState
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.TwitchHelix
 
 class TwitchEventSubTest :
     BehaviorSpec({

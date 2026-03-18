@@ -1,12 +1,12 @@
 package io.github.captnblubber.twitchkt.helix.model
 
+import io.github.captnblubber.twitchkt.model.common.PollStatus
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.model.common.PollStatus
 import kotlin.time.Instant
 
 class HelixModelTest :

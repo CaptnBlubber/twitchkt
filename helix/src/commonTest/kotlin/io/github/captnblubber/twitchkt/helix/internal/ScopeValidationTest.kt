@@ -1,5 +1,9 @@
 package io.github.captnblubber.twitchkt.helix.internal
 
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.ScopeProvider
+import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
@@ -15,10 +19,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.ScopeProvider
-import io.github.captnblubber.twitchkt.auth.TwitchScope
-import io.github.captnblubber.twitchkt.error.TwitchApiException
 
 class ScopeValidationTest :
     BehaviorSpec({

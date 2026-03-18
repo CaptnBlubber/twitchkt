@@ -2,12 +2,12 @@
 
 package io.github.captnblubber.twitchkt.irc.internal
 
+import io.github.captnblubber.twitchkt.irc.IrcMessage
+import io.github.captnblubber.twitchkt.model.common.SubTier
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.github.captnblubber.twitchkt.irc.IrcMessage
-import io.github.captnblubber.twitchkt.model.common.SubTier
 
 class IrcParserTest :
     BehaviorSpec({

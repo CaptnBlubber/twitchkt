@@ -1,10 +1,5 @@
 package io.github.captnblubber.twitchkt.eventsub.internal
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import io.github.captnblubber.twitchkt.eventsub.model.AutomodMessageHold
 import io.github.captnblubber.twitchkt.eventsub.model.AutomodMessageUpdate
 import io.github.captnblubber.twitchkt.eventsub.model.AutomodSettingsUpdate
@@ -82,6 +77,11 @@ import io.github.captnblubber.twitchkt.eventsub.model.UserUpdate
 import io.github.captnblubber.twitchkt.eventsub.protocol.EventSubFrame
 import io.github.captnblubber.twitchkt.eventsub.protocol.EventSubMetadata
 import io.github.captnblubber.twitchkt.eventsub.protocol.SessionPayload
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Instant
 
 internal class EventSubParser(

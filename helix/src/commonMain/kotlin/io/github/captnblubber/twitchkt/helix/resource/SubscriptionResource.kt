@@ -1,9 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onStart
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.EventSubSubscriptionType
@@ -11,6 +7,10 @@ import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.EventSubSubscription
 import io.github.captnblubber.twitchkt.helix.model.Subscription
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Twitch Helix Subscriptions and EventSub API resource.

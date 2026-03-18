@@ -1,7 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
@@ -10,6 +8,8 @@ import io.github.captnblubber.twitchkt.helix.model.ActiveExtensions
 import io.github.captnblubber.twitchkt.helix.model.BlockedUser
 import io.github.captnblubber.twitchkt.helix.model.User
 import io.github.captnblubber.twitchkt.helix.model.UserExtension
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Twitch Helix Users API resource.

@@ -1,8 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
@@ -16,6 +13,9 @@ import io.github.captnblubber.twitchkt.helix.model.SendChatMessageRequest
 import io.github.captnblubber.twitchkt.helix.model.SendMessageResponse
 import io.github.captnblubber.twitchkt.helix.model.SharedChatSession
 import io.github.captnblubber.twitchkt.helix.model.UserEmote
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Twitch Helix Chat API resource.

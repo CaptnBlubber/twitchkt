@@ -1,16 +1,16 @@
 package io.github.captnblubber.twitchkt.eventsub.internal
 
-import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.github.captnblubber.twitchkt.eventsub.model.ChannelFollow
 import io.github.captnblubber.twitchkt.eventsub.model.ChannelSubscribe
 import io.github.captnblubber.twitchkt.eventsub.model.ChannelSubscriptionGift
 import io.github.captnblubber.twitchkt.eventsub.model.ChannelUpdate
 import io.github.captnblubber.twitchkt.eventsub.model.StreamOnline
 import io.github.captnblubber.twitchkt.eventsub.model.UnknownEvent
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.time.Instant
 
 class EventSubParserTest :

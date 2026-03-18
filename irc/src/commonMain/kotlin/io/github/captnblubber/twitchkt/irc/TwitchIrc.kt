@@ -2,6 +2,10 @@
 
 package io.github.captnblubber.twitchkt.irc
 
+import io.github.captnblubber.twitchkt.ConnectionState
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.irc.internal.IrcParser
+import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
@@ -21,10 +25,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import io.github.captnblubber.twitchkt.ConnectionState
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.irc.internal.IrcParser
-import io.github.captnblubber.twitchkt.logging.LogLevel
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.random.Random

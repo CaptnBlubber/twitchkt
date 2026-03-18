@@ -1,7 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
@@ -10,6 +8,8 @@ import io.github.captnblubber.twitchkt.helix.model.Stream
 import io.github.captnblubber.twitchkt.helix.model.StreamKey
 import io.github.captnblubber.twitchkt.helix.model.StreamMarker
 import io.github.captnblubber.twitchkt.helix.model.StreamMarkerGroup
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Twitch Helix Streams API resource.

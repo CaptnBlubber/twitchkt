@@ -1,5 +1,8 @@
 package io.github.captnblubber.twitchkt.helix.internal
 
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
@@ -17,9 +20,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.error.TwitchApiException
 
 @Serializable
 data class TestItem(

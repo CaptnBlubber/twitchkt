@@ -1,5 +1,9 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -12,10 +16,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
-import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
 
 class ChannelResourceTest :
     BehaviorSpec({

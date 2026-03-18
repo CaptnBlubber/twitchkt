@@ -1,8 +1,8 @@
 package io.github.captnblubber.twitchkt.helix.model
 
+import io.github.captnblubber.twitchkt.model.common.PollStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import io.github.captnblubber.twitchkt.model.common.PollStatus
 import kotlin.time.Instant
 
 /**

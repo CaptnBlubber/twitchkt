@@ -1,5 +1,9 @@
 package io.github.captnblubber.twitchkt.helix.internal
 
+import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.error.TwitchApiException
+import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -17,10 +21,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TwitchScope
-import io.github.captnblubber.twitchkt.error.TwitchApiException
-import io.github.captnblubber.twitchkt.logging.LogLevel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
