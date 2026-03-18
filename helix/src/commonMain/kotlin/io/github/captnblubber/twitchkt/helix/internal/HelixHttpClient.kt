@@ -237,11 +237,22 @@ internal class HelixHttpClient(
             } while (cursor != null)
         }
 
+    /**
+     * Fetches a single page of results from a paginated Helix endpoint.
+     *
+     * @param endpoint the Helix endpoint path (e.g. `"channels/followers"`).
+     * @param params query parameters to include in the request.
+     * @param pageSize the maximum number of items to return. When `null`, the Twitch API
+     * uses its own default for the endpoint. Must be positive if provided.
+     * @return a [Page] containing the items on this page and the cursor for the next page,
+     * or `null` cursor if this is the last page.
+     */
     suspend inline fun <reified T> getPage(
         endpoint: String,
         params: List<Pair<String, String>> = emptyList(),
         pageSize: Int? = null,
     ): Page<T> {
+        require(pageSize == null || pageSize > 0) { "pageSize must be positive, was $pageSize" }
         val fullParams =
             buildList {
                 addAll(params)
