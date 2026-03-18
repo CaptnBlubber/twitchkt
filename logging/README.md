@@ -22,14 +22,29 @@ enum class LogLevel { DEBUG, INFO, WARN, ERROR }
 
 ## Usage
 
-All TwitchKt modules accept a logger via `TwitchKtConfig.logger`. If no logger is provided, logging is disabled.
+Pass a `TwitchKtLogger` to `TwitchKtConfig`. All TwitchKt modules will use it for internal logging. If omitted, logging is silently disabled.
 
-For a ready-made implementation backed by Kermit, see [`twitchkt-logging-kermit`](../logging-kermit/).
+### Custom implementation
 
-## Structure
+Implement the interface to bridge to any logging framework:
 
+```kotlin
+// SLF4J example
+val logger = TwitchKtLogger { level, tag, message ->
+    val slf4j = LoggerFactory.getLogger(tag)
+    when (level) {
+        LogLevel.DEBUG -> slf4j.debug(message())
+        LogLevel.INFO  -> slf4j.info(message())
+        LogLevel.WARN  -> slf4j.warn(message())
+        LogLevel.ERROR -> slf4j.error(message())
+    }
+}
+
+val config = TwitchKtConfig(
+    clientId = "your_client_id",
+    tokenProvider = { myTokenStore.getAccessToken() },
+    logger = logger,
+)
 ```
-logging/src/commonMain/kotlin/io/github/captnblubber/twitchkt/logging/
-├── LogLevel.kt
-└── TwitchKtLogger.kt
-```
+
+For a ready-made Kermit implementation, see [`twitchkt-logging-kermit`](../logging-kermit/).

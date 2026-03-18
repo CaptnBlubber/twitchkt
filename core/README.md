@@ -45,25 +45,57 @@ Shared contracts and domain types for the TwitchKt library. Every other TwitchKt
 | `SubTier` | `Tier1`, `Tier2`, `Tier3`, `Prime` |
 | `PollStatus` | Poll lifecycle states |
 
-## Dependencies
+## Usage
 
-- `twitchkt-logging` (API) — logger interface
-- `kotlinx-serialization-json` — enum serialization
+### Basic configuration
 
-## Structure
-
+```kotlin
+val config = TwitchKtConfig(
+    clientId = "your_client_id",
+    tokenProvider = { myTokenStore.getAccessToken() },
+)
 ```
-core/src/commonMain/kotlin/io/github/captnblubber/twitchkt/
-├── TwitchKtConfig.kt
-├── ConnectionState.kt
-├── auth/
-│   ├── TokenProvider.kt
-│   ├── ScopeProvider.kt
-│   ├── TwitchScope.kt
-│   └── RequiresScope.kt
-├── error/
-│   └── TwitchApiException.kt
-└── model/common/
-    ├── SubTier.kt
-    └── PollStatus.kt
+
+### With all options
+
+```kotlin
+val config = TwitchKtConfig(
+    clientId = "your_client_id",
+    tokenProvider = { myTokenStore.getAccessToken() },
+    scopeProvider = { myTokenStore.getGrantedScopes() },
+    logger = myLogger,
+)
+```
+
+### Custom TokenProvider
+
+`TokenProvider` is a `fun interface` — any suspend lambda works:
+
+```kotlin
+// Static token
+val config = TwitchKtConfig(
+    clientId = "your_client_id",
+    tokenProvider = { "oauth:hardcoded_token" },
+)
+
+// Rotated token from a store
+val config = TwitchKtConfig(
+    clientId = "your_client_id",
+    tokenProvider = { tokenStore.getValidToken() }, // called on every request
+)
+```
+
+### Error handling
+
+```kotlin
+try {
+    helix.channels.update(broadcasterId, request)
+} catch (e: TwitchApiException.RateLimited) {
+    delay(e.retryAfterMs)
+} catch (e: TwitchApiException.Forbidden) {
+    log.w { "Missing scope for update: ${e.message}" }
+} catch (e: TwitchApiException.Unauthorized) {
+    tokenStore.invalidate()
+    // retry with fresh token
+}
 ```

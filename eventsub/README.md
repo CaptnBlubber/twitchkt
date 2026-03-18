@@ -199,29 +199,3 @@ Start the mock API server, then run:
 
 Guard mechanism: Excluded via Gradle `exclude("**/integration/**")` and Kotest `enabledIf` checking the `integrationTest` system property.
 
-## Dependencies
-
-- `twitchkt-core` (API) — config, connection state, auth contracts
-- `twitchkt-helix` (implementation) — uses `SubscriptionResource` to create EventSub subscriptions
-- Ktor client (WebSocket, content negotiation, serialization)
-- `kotlinx-coroutines-core` — structured concurrency, flows
-
-## Structure
-
-```
-eventsub/src/
-├── commonMain/kotlin/io/github/captnblubber/twitchkt/eventsub/
-│   ├── TwitchEventSub.kt
-│   ├── EventSubSubscriptionType.kt
-│   ├── internal/
-│   │   ├── EventSubParser.kt
-│   │   ├── EventPayloads.kt
-│   │   └── ParsedMessage.kt
-│   ├── model/               — TwitchEvent sealed interface + 73 concrete types
-│   └── protocol/
-│       ├── EventSubFrame.kt
-│       ├── EventSubMetadata.kt
-│       └── SessionPayload.kt
-├── commonTest/               — Parser tests, protocol tests, client tests
-└── jvmTest/                  — Integration tests (Twitch CLI mock server)
-```

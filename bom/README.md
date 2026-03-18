@@ -6,7 +6,7 @@ Bill of Materials (BOM) for the TwitchKt library. Aligns versions of all TwitchK
 
 ```kotlin
 dependencies {
-    implementation(platform("io.github.captnblubber:twitchkt-bom:VERSION"))
+    implementation(platform("io.github.captnblubber:twitchkt-bom:0.1.0-alpha01"))
     implementation("io.github.captnblubber:twitchkt-helix")    // version managed by BOM
     implementation("io.github.captnblubber:twitchkt-eventsub")  // version managed by BOM
 }
@@ -24,6 +24,3 @@ dependencies {
 | `twitchkt-irc` | `io.github.captnblubber:twitchkt-irc` |
 | `twitchkt-logging-kermit` | `io.github.captnblubber:twitchkt-logging-kermit` |
 
-## Implementation Note
-
-Uses Gradle's `java-platform` plugin which produces Maven BOM metadata (`<dependencyManagement>` in the POM). Despite the `java-` prefix in the plugin name, this is the standard Gradle mechanism for creating BOMs and works with all Gradle consumers including Kotlin Multiplatform projects. Major KMP libraries (Ktor, Koin) use the same approach.

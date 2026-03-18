@@ -45,23 +45,3 @@ For chat messages and sending, use EventSub (`channel.chat.message`) and Helix (
 | `CLEARMSG` | `IrcMessage.ClearMsg` | targetMessageId, login |
 | `NOTICE` | `IrcMessage.Notice` | msgId, message |
 
-## Dependencies
-
-- `twitchkt-core` (API) — config, connection state
-- Ktor client (WebSocket)
-- `kotlinx-coroutines-core`
-
-## Structure
-
-```
-irc/src/
-├── commonMain/kotlin/io/github/captnblubber/twitchkt/irc/
-│   ├── TwitchIrc.kt
-│   ├── IrcMessage.kt
-│   └── internal/
-│       └── IrcParser.kt
-└── commonTest/kotlin/io/github/captnblubber/twitchkt/irc/
-    ├── TwitchIrcTest.kt
-    └── internal/
-        └── IrcParserTest.kt
-```

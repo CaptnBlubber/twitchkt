@@ -53,19 +53,3 @@ val info = auth.validate(accessToken = tokens.accessToken)
 | `TokenResponse` | `accessToken`, `refreshToken`, `expiresIn`, `scopes`, `tokenType` |
 | `ValidationResponse` | `clientId`, `login`, `userId`, `scopes`, `expiresIn` |
 
-## Dependencies
-
-- `twitchkt-core` (API) — config, auth contracts
-- Ktor client (HTTP, content negotiation, serialization)
-
-## Structure
-
-```
-auth/src/
-├── commonMain/kotlin/io/github/captnblubber/twitchkt/auth/
-│   ├── TwitchAuth.kt
-│   ├── TokenResponse.kt
-│   └── ValidationResponse.kt
-└── commonTest/kotlin/io/github/captnblubber/twitchkt/auth/
-    └── TwitchAuthTest.kt
-```

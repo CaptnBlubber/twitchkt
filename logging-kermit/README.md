@@ -16,14 +16,3 @@ val config = TwitchKtConfig(
 
 Log messages from TwitchKt modules are forwarded to Kermit with tags prefixed by the configured prefix (e.g. `twitchkt/TwitchEventSub`, `twitchkt/HelixHttpClient`).
 
-## Dependencies
-
-- `twitchkt-logging` (API) — `TwitchKtLogger` interface
-- Kermit — logging framework
-
-## Structure
-
-```
-logging-kermit/src/commonMain/kotlin/io/github/captnblubber/twitchkt/logging/kermit/
-└── KermitTwitchKtLogger.kt
-```
