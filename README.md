@@ -219,55 +219,39 @@ Then run the integration tests for the desired module:
 
 See the [helix](helix/) and [eventsub](eventsub/) module READMEs for details on what each suite covers.
 
-## Architecture
+## Module Documentation
 
-### Module Dependency Graph
+Each module has its own README with deeper documentation on its API, models, and usage patterns:
 
-```mermaid
-graph BT
-    logging[twitchkt-logging]
-    core[twitchkt-core] --> logging
-    auth[twitchkt-auth] --> core
-    helix[twitchkt-helix] --> core
-    eventsub[twitchkt-eventsub] --> core
-    eventsub --> helix
-    irc[twitchkt-irc] --> core
-    logging-kermit[twitchkt-logging-kermit] --> logging
-```
-
-### Internal Structure
-
-```mermaid
-graph TD
-    A[TwitchHelix] --> B[HelixHttpClient]
-    B --> C[Ktor HttpClient]
-    B --> D[TokenProvider]
-    A --> E[UserResource]
-    A --> F[ChannelResource]
-    A --> G[StreamResource]
-    A --> H[ChatResource / FollowerResource / ...]
-
-    I[TwitchEventSub] --> C
-    I --> J[EventSubParser]
-    I --> P[SubscriptionResource]
-    J --> K[ParsedMessage]
-    K --> L[TwitchEvent sealed hierarchy]
-    I --> M[ConnectionState StateFlow]
-    I --> N[events SharedFlow]
-
-    Q[TwitchIrc] --> C
-    Q --> R[IrcParser]
-    R --> S[IrcMessage sealed hierarchy]
-    Q --> T[ConnectionState StateFlow]
-    Q --> U[messages SharedFlow]
-```
-
-## Dependencies
-
-- `ktor-client-core` + `ktor-client-websockets` + `ktor-client-content-negotiation` — HTTP and WebSocket transport
-- `ktor-serialization-kotlinx-json` + `kotlinx-serialization-json` — JSON serialization
-- `kotlinx-coroutines-core` — Structured concurrency and Flow
+| Module | Documentation |
+|---|---|
+| `twitchkt-logging` | [logging/README.md](logging/README.md) |
+| `twitchkt-core` | [core/README.md](core/README.md) |
+| `twitchkt-auth` | [auth/README.md](auth/README.md) |
+| `twitchkt-helix` | [helix/README.md](helix/README.md) |
+| `twitchkt-eventsub` | [eventsub/README.md](eventsub/README.md) |
+| `twitchkt-irc` | [irc/README.md](irc/README.md) |
+| `twitchkt-logging-kermit` | [logging-kermit/README.md](logging-kermit/README.md) |
+| `twitchkt-bom` | [bom/README.md](bom/README.md) |
 
 ## Support
 
 If you find TwitchKt useful, the best way to support the project is to drop a follow on the Twitch channel where it was built — [twitch.tv/captnblubber](https://twitch.tv/captnblubber). If you have Amazon Prime, a free Prime sub goes a long way too.
+
+## License
+
+```
+Copyright 2026 Angelo Rüggeberg
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
