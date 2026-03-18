@@ -179,7 +179,10 @@ class FollowerResourceTest :
                     page.data.first().userId shouldBe "456"
                     page.data.first().userLogin shouldBe "follower"
                     page.data.first().userName shouldBe "Follower"
-                    page.data.first().followedAt.toString() shouldBe "2022-05-24T22:22:08Z"
+                    page.data
+                        .first()
+                        .followedAt
+                        .toString() shouldBe "2022-05-24T22:22:08Z"
                 }
 
                 Then("it should return the next page cursor") {

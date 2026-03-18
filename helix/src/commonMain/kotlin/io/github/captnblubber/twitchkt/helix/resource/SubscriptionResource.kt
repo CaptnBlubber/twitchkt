@@ -2,13 +2,13 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.github.captnblubber.twitchkt.helix.EventSubSubscriptionType
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.EventSubSubscription
 import io.github.captnblubber.twitchkt.helix.model.Subscription
-import io.github.captnblubber.twitchkt.error.TwitchApiException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
