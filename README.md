@@ -35,7 +35,28 @@ TwitchKt uses [Ktor](https://ktor.io) for all HTTP and WebSocket communication. 
 
 ### 1. Add dependencies
 
-Use the BOM to align all module versions, then declare the modules and Ktor plugins you need:
+If you only need specific parts of the library, declare them directly with an explicit version:
+
+```kotlin
+dependencies {
+    val twitchKtVersion = "VERSION"
+    implementation("io.github.captnblubber:twitchkt-helix:$twitchKtVersion")      // Helix REST API
+    implementation("io.github.captnblubber:twitchkt-eventsub:$twitchKtVersion")   // EventSub WebSocket
+    implementation("io.github.captnblubber:twitchkt-auth:$twitchKtVersion")       // OAuth2 flows
+
+    // Ktor — pick an engine for your platform
+    val ktorVersion = "3.x.x"
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")                         // JVM
+    // implementation("io.ktor:ktor-client-js:$ktorVersion")                       // JS/Wasm
+
+    // Ktor plugins required by TwitchKt
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")                  // EventSub only
+}
+```
+
+Alternatively, use the BOM to align all module versions and omit version numbers on individual declarations:
 
 ```kotlin
 dependencies {
@@ -43,23 +64,19 @@ dependencies {
     implementation(platform("io.github.captnblubber:twitchkt-bom:VERSION"))
 
     // TwitchKt modules (no version needed with BOM)
-    implementation("io.github.captnblubber:twitchkt-core")
-    implementation("io.github.captnblubber:twitchkt-helix")       // Helix REST API
-    implementation("io.github.captnblubber:twitchkt-eventsub")    // EventSub WebSocket
-    implementation("io.github.captnblubber:twitchkt-auth")        // OAuth2 flows
+    implementation("io.github.captnblubber:twitchkt-helix")
+    implementation("io.github.captnblubber:twitchkt-eventsub")
+    implementation("io.github.captnblubber:twitchkt-auth")
 
     // Optional: Kermit logging bridge
     implementation("io.github.captnblubber:twitchkt-logging-kermit")
 
-    // Ktor — pick an engine for your platform
+    // Ktor (still needs an explicit version)
     val ktorVersion = "3.x.x"
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")                        // JVM
-    // implementation("io.ktor:ktor-client-js:$ktorVersion")                      // JS/Wasm
-
-    // Ktor plugins required by TwitchKt
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-client-websockets:$ktorVersion")                 // EventSub only
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")                  // EventSub only
 }
 ```
 
