@@ -138,34 +138,53 @@ class ModerationResource internal constructor(
      * [Twitch API: Get Banned Users](https://dev.twitch.tv/docs/api/reference/#get-banned-users)
      *
      * Gets all users that the broadcaster banned or put in a timeout.
+     * Automatically paginates through all results.
      *
      * @param broadcasterId the ID of the broadcaster whose list of banned users you want to get. This ID must match the user ID in the access token.
-     * @param userIds a list of user IDs used to filter the results. You may specify a maximum of 100 IDs. The returned list includes only those users that were banned or put in a timeout.
-     * @param first the maximum number of items to return per page in the response. The minimum page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param after the cursor used to get the next page of results.
-     * @param before the cursor used to get the previous page of results.
-     * @return list of [BannedUser] objects.
+     * @param userIds a list of user IDs used to filter the results. You may specify a maximum of 100 IDs.
+     * @return a [Flow] of [BannedUser] objects.
+     */
+    @RequiresScope(TwitchScope.MODERATION_READ)
+    fun getAllBanned(
+        broadcasterId: String,
+        userIds: List<String> = emptyList(),
+    ): Flow<BannedUser> {
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                userIds.forEach { add("user_id" to it) }
+            }
+        return http
+            .paginate<BannedUser>("moderation/banned", params)
+            .onStart { http.validateScopes(TwitchScope.MODERATION_READ) }
+    }
+
+    /**
+     * [Twitch API: Get Banned Users](https://dev.twitch.tv/docs/api/reference/#get-banned-users)
+     *
+     * Gets a single page of users that the broadcaster banned or put in a timeout.
+     *
+     * @param broadcasterId the ID of the broadcaster whose list of banned users you want to get. This ID must match the user ID in the access token.
+     * @param userIds a list of user IDs used to filter the results. You may specify a maximum of 100 IDs.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [BannedUser] objects.
      */
     @RequiresScope(TwitchScope.MODERATION_READ)
     suspend fun getBanned(
         broadcasterId: String,
         userIds: List<String> = emptyList(),
-        first: Int = 20,
-        after: String? = null,
-        before: String? = null,
-    ): List<BannedUser> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<BannedUser> {
         http.validateScopes(TwitchScope.MODERATION_READ)
-        return http
-            .get<BannedUser>(
-                "moderation/banned",
-                buildList {
-                    add("broadcaster_id" to broadcasterId)
-                    userIds.forEach { add("user_id" to it) }
-                    add("first" to first.toString())
-                    after?.let { add("after" to it) }
-                    before?.let { add("before" to it) }
-                },
-            ).data
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                userIds.forEach { add("user_id" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "moderation/banned", params = params, pageSize = pageSize)
     }
 
     /**

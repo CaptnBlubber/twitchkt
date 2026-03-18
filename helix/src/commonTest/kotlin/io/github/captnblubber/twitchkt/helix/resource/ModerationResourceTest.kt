@@ -246,6 +246,222 @@ class ModerationResourceTest :
             }
         }
 
+        val bannedUserJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "banneduser",
+                        "user_name": "BannedUser",
+                        "expires_at": "",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "reason": "spam",
+                        "moderator_id": "100",
+                        "moderator_login": "mod",
+                        "moderator_name": "Mod"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val bannedUserLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "789",
+                        "user_login": "anotherbanned",
+                        "user_name": "AnotherBanned",
+                        "expires_at": "",
+                        "created_at": "2024-02-01T00:00:00Z",
+                        "reason": "harassment",
+                        "moderator_id": "100",
+                        "moderator_login": "mod",
+                        "moderator_name": "Mod"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val bannedUserSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "banneduser",
+                        "user_name": "BannedUser",
+                        "expires_at": "",
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "reason": "spam",
+                        "moderator_id": "100",
+                        "moderator_login": "mod",
+                        "moderator_name": "Mod"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("Banned") {
+
+            When("getAllBanned is called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val banned = resource.getAllBanned(broadcasterId = "123").toList()
+
+                Then("it should call the moderation/banned endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/banned"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the banned user") {
+                    banned.size shouldBe 1
+                    banned.first().userId shouldBe "789"
+                    banned.first().userLogin shouldBe "anotherbanned"
+                    banned.first().reason shouldBe "harassment"
+                }
+            }
+
+            When("getBanned is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBanned(broadcasterId = "123")
+
+                Then("it should call the moderation/banned endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/banned"
+                }
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the banned user data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "456"
+                    page.data.first().reason shouldBe "spam"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getBanned is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBanned(broadcasterId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getBanned is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBanned(broadcasterId = "123")
+
+                Then("it should return the data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "789"
+                }
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getBanned is called with userIds filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getBanned(broadcasterId = "123", userIds = listOf("456", "789"))
+
+                Then("it should pass the user_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("user_id") shouldBe listOf("456", "789")
+                }
+            }
+
+            When("getBanned is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = bannedUserJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getBanned(broadcasterId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
         Given("VIPs") {
 
             When("getAllVIPs is called with a broadcaster ID") {
