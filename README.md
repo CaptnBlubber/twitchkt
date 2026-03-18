@@ -39,13 +39,13 @@ If you only need specific parts of the library, declare them directly with an ex
 
 ```kotlin
 dependencies {
-    val twitchKtVersion = "VERSION"
+    val twitchKtVersion = "0.1.0-alpha01"
     implementation("io.github.captnblubber:twitchkt-helix:$twitchKtVersion")      // Helix REST API
     implementation("io.github.captnblubber:twitchkt-eventsub:$twitchKtVersion")   // EventSub WebSocket
     implementation("io.github.captnblubber:twitchkt-auth:$twitchKtVersion")       // OAuth2 flows
 
     // Ktor — pick an engine for your platform
-    val ktorVersion = "3.x.x"
+    val ktorVersion = "3.3.3"
     implementation("io.ktor:ktor-client-cio:$ktorVersion")                         // JVM
     // implementation("io.ktor:ktor-client-js:$ktorVersion")                       // JS/Wasm
 
@@ -61,7 +61,7 @@ Alternatively, use the BOM to align all module versions and omit version numbers
 ```kotlin
 dependencies {
     // BOM — manages all twitchkt module versions
-    implementation(platform("io.github.captnblubber:twitchkt-bom:VERSION"))
+    implementation(platform("io.github.captnblubber:twitchkt-bom:0.1.0-alpha01"))
 
     // TwitchKt modules (no version needed with BOM)
     implementation("io.github.captnblubber:twitchkt-helix")
@@ -72,7 +72,7 @@ dependencies {
     implementation("io.github.captnblubber:twitchkt-logging-kermit")
 
     // Ktor (still needs an explicit version)
-    val ktorVersion = "3.x.x"
+    val ktorVersion = "3.3.3"
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
