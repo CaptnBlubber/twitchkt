@@ -3,11 +3,14 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.error.TwitchApiException
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.ChannelEditor
 import io.github.captnblubber.twitchkt.helix.model.ChannelInformation
 import io.github.captnblubber.twitchkt.helix.model.FollowedChannel
 import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 
 class ChannelResource internal constructor(
     private val http: HelixHttpClient,
@@ -75,32 +78,53 @@ class ChannelResource internal constructor(
     /**
      * [Twitch API: Get Followed Channels](https://dev.twitch.tv/docs/api/reference/#get-followed-channels)
      *
-     * Gets a list of broadcasters that the specified user follows. You can also use this endpoint
-     * to see whether a user follows a specific broadcaster.
+     * Gets all broadcasters that the specified user follows.
+     * Automatically paginates through all results.
      *
      * @param userId a user's ID. Returns the list of broadcasters that this user follows. This ID must match the user ID in the user OAuth token.
-     * @param broadcasterId a broadcaster's ID. Use this parameter to see whether the user follows this broadcaster. If specified, the response contains this broadcaster if the user follows them. If not specified, the response contains all broadcasters that the user follows.
-     * @param first the maximum number of items to return per page in the response (1–100, default 20).
-     * @param after the cursor used to get the next page of results.
-     * @return the list of broadcasters that the user follows, in descending order by followed_at.
+     * @param broadcasterId a broadcaster's ID. Use this parameter to see whether the user follows this broadcaster.
+     * @return a [Flow] of [FollowedChannel] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_FOLLOWS)
+    fun getAllFollowedChannels(
+        userId: String,
+        broadcasterId: String? = null,
+    ): Flow<FollowedChannel> {
+        val params =
+            buildList {
+                add("user_id" to userId)
+                broadcasterId?.let { add("broadcaster_id" to it) }
+            }
+        return http
+            .paginate<FollowedChannel>("channels/followed", params)
+            .onStart { http.validateScopes(TwitchScope.USER_READ_FOLLOWS) }
+    }
+
+    /**
+     * [Twitch API: Get Followed Channels](https://dev.twitch.tv/docs/api/reference/#get-followed-channels)
+     *
+     * Gets a single page of broadcasters that the specified user follows.
+     *
+     * @param userId a user's ID. Returns the list of broadcasters that this user follows. This ID must match the user ID in the user OAuth token.
+     * @param broadcasterId a broadcaster's ID. Use this parameter to see whether the user follows this broadcaster.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [FollowedChannel] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_FOLLOWS)
     suspend fun getFollowedChannels(
         userId: String,
         broadcasterId: String? = null,
-        first: Int = 20,
-        after: String? = null,
-    ): List<FollowedChannel> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<FollowedChannel> {
         http.validateScopes(TwitchScope.USER_READ_FOLLOWS)
-        return http
-            .get<FollowedChannel>(
-                "channels/followed",
-                buildList {
-                    add("user_id" to userId)
-                    broadcasterId?.let { add("broadcaster_id" to it) }
-                    add("first" to first.toString())
-                    after?.let { add("after" to it) }
-                },
-            ).data
+        val params =
+            buildList {
+                add("user_id" to userId)
+                broadcasterId?.let { add("broadcaster_id" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "channels/followed", params = params, pageSize = pageSize)
     }
 }

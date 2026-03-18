@@ -5,6 +5,8 @@ import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
 import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -15,6 +17,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 
 class ChannelResourceTest :
@@ -200,6 +203,196 @@ class ChannelResourceTest :
 
                 Then("it should complete without error for 204 response") {
                     engine.requestHistory shouldBe engine.requestHistory
+                }
+            }
+        }
+
+        val followedChannelJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "456",
+                        "broadcaster_login": "followed",
+                        "broadcaster_name": "Followed",
+                        "followed_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val followedChannelLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "789",
+                        "broadcaster_login": "lastfollowed",
+                        "broadcaster_name": "LastFollowed",
+                        "followed_at": "2024-02-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val followedChannelSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "broadcaster_id": "456",
+                        "broadcaster_login": "followed",
+                        "broadcaster_name": "Followed",
+                        "followed_at": "2024-01-01T00:00:00Z"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("FollowedChannels") {
+
+            When("getAllFollowedChannels is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val channels = resource.getAllFollowedChannels(userId = "123").toList()
+
+                Then("it should call the channels/followed endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/channels/followed"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the followed channel") {
+                    channels.size shouldBe 1
+                    channels.first().broadcasterId shouldBe "789"
+                    channels.first().broadcasterLogin shouldBe "lastfollowed"
+                }
+            }
+
+            When("getFollowedChannels is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getFollowedChannels(userId = "123")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the followed channel data") {
+                    page.data.size shouldBe 1
+                    page.data.first().broadcasterId shouldBe "456"
+                    page.data.first().broadcasterName shouldBe "Followed"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getFollowedChannels is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getFollowedChannels(userId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getFollowedChannels is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getFollowedChannels(userId = "123")
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getFollowedChannels is called with a broadcasterId filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getFollowedChannels(userId = "123", broadcasterId = "456")
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                }
+            }
+
+            When("getFollowedChannels is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = followedChannelJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getFollowedChannels(userId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
                 }
             }
         }
