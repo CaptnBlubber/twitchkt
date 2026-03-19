@@ -2,12 +2,15 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.ActiveExtensions
 import io.github.captnblubber.twitchkt.helix.model.BlockedUser
 import io.github.captnblubber.twitchkt.helix.model.User
 import io.github.captnblubber.twitchkt.helix.model.UserExtension
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -79,29 +82,43 @@ class UserResource internal constructor(
     /**
      * [Twitch API: Get User Block List](https://dev.twitch.tv/docs/api/reference/#get-user-block-list)
      *
-     * Gets the list of users that the broadcaster has blocked.
+     * Gets all users that the broadcaster has blocked.
+     * Automatically paginates through all results.
      *
-     * @param broadcasterId the ID of the broadcaster whose block list you want to get. This ID
-     * must match the user ID in the access token.
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100. The default is 20.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of blocked users.
+     * @param broadcasterId the ID of the broadcaster whose block list you want to get. This ID must match the user ID in the access token.
+     * @return a [Flow] of [BlockedUser] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_BLOCKED_USERS, TwitchScope.USER_MANAGE_BLOCKED_USERS)
+    fun getAllBlockedUsers(broadcasterId: String): Flow<BlockedUser> {
+        val params = listOf("broadcaster_id" to broadcasterId)
+        return http
+            .paginate<BlockedUser>("users/blocks", params)
+            .onStart { http.validateAnyScope(TwitchScope.USER_READ_BLOCKED_USERS, TwitchScope.USER_MANAGE_BLOCKED_USERS) }
+    }
+
+    /**
+     * [Twitch API: Get User Block List](https://dev.twitch.tv/docs/api/reference/#get-user-block-list)
+     *
+     * Gets a single page of users that the broadcaster has blocked.
+     *
+     * @param broadcasterId the ID of the broadcaster whose block list you want to get. This ID must match the user ID in the access token.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [BlockedUser] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_BLOCKED_USERS, TwitchScope.USER_MANAGE_BLOCKED_USERS)
     suspend fun getBlockList(
         broadcasterId: String,
-        first: Int = 20,
-        after: String? = null,
-    ): List<BlockedUser> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<BlockedUser> {
         http.validateAnyScope(TwitchScope.USER_READ_BLOCKED_USERS, TwitchScope.USER_MANAGE_BLOCKED_USERS)
         val params =
             buildList {
                 add("broadcaster_id" to broadcasterId)
-                add("first" to first.toString())
-                after?.let { add("after" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<BlockedUser>("users/blocks", params).data
+        return http.getPage(endpoint = "users/blocks", params = params, pageSize = pageSize)
     }
 
     /**

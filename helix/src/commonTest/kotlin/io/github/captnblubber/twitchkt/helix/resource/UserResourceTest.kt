@@ -5,6 +5,8 @@ import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -15,6 +17,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 
 class UserResourceTest :
@@ -160,6 +163,175 @@ class UserResourceTest :
                 Then("it should return the token owner user") {
                     users shouldHaveSize 1
                     users.first().login shouldBe "myself"
+                }
+            }
+        }
+
+        val blockedUserJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "blocked",
+                        "display_name": "Blocked"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val blockedUserLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "789",
+                        "user_login": "blocked2",
+                        "display_name": "Blocked2"
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val blockedUserSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "user_id": "456",
+                        "user_login": "blocked",
+                        "display_name": "Blocked"
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("BlockList") {
+
+            When("getAllBlockedUsers is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedUserLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val users = resource.getAllBlockedUsers(broadcasterId = "123").toList()
+
+                Then("it should call the users/blocks endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/blocks"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the blocked user") {
+                    users.size shouldBe 1
+                    users.first().userId shouldBe "789"
+                    users.first().displayName shouldBe "Blocked2"
+                }
+            }
+
+            When("getBlockList is called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedUserJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockList(broadcasterId = "123")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the blocked user data") {
+                    page.data.size shouldBe 1
+                    page.data.first().userId shouldBe "456"
+                    page.data.first().displayName shouldBe "Blocked"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("getBlockList is called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedUserSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockList(broadcasterId = "123", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("getBlockList is called and there is no next page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedUserLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.getBlockList(broadcasterId = "123")
+
+                Then("cursor should be null") {
+                    page.cursor.shouldBeNull()
+                }
+            }
+
+            When("getBlockList is called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = blockedUserJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getBlockList(broadcasterId = "123", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
                 }
             }
         }
