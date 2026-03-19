@@ -2,12 +2,15 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.Stream
 import io.github.captnblubber.twitchkt.helix.model.StreamKey
 import io.github.captnblubber.twitchkt.helix.model.StreamMarker
 import io.github.captnblubber.twitchkt.helix.model.StreamMarkerGroup
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -44,37 +47,23 @@ class StreamResource internal constructor(
     /**
      * [Twitch API: Get Streams](https://dev.twitch.tv/docs/api/reference/#get-streams)
      *
-     * Gets a list of all streams. The list is in descending order by the number of viewers
-     * watching the stream. Because viewers come and go during a stream, it's possible to find
-     * duplicate or missing streams in the list as you page through the results.
+     * Gets all streams matching the filter criteria.
+     * Automatically paginates through all results.
      *
-     * @param userIds a user ID used to filter the list of streams. Returns only the streams of
-     * those users that are broadcasting. You may specify a maximum of 100 IDs.
-     * @param userLogins a user login name used to filter the list of streams. Returns only the
-     * streams of those users that are broadcasting. You may specify a maximum of 100 login names.
-     * @param gameIds a game (category) ID used to filter the list of streams. Returns only the
-     * streams that are broadcasting the game (category). You may specify a maximum of 100 IDs.
-     * @param type the type of stream to filter the list of streams by. Possible values are:
-     * `all`, `live`. The default is `all`.
-     * @param language a language code used to filter the list of streams. Returns only streams
-     * that broadcast in the specified language. Specify the language using an ISO 639-1 two-letter
-     * language code or `other`. You may specify a maximum of 100 language codes.
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param before the cursor used to get the previous page of results.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of streams.
+     * @param userIds filter by user IDs (max 100).
+     * @param userLogins filter by user login names (max 100).
+     * @param gameIds filter by game/category IDs (max 100).
+     * @param type filter by stream type: `all`, `live`. Default: `all`.
+     * @param language filter by language codes (max 100).
+     * @return a [Flow] of [Stream] objects.
      */
-    suspend fun getStreams(
+    fun getAllStreams(
         userIds: List<String> = emptyList(),
         userLogins: List<String> = emptyList(),
         gameIds: List<String> = emptyList(),
         type: String? = null,
         language: List<String> = emptyList(),
-        first: Int = 20,
-        before: String? = null,
-        after: String? = null,
-    ): List<Stream> {
+    ): Flow<Stream> {
         val params =
             buildList {
                 userIds.forEach { add("user_id" to it) }
@@ -82,41 +71,85 @@ class StreamResource internal constructor(
                 gameIds.forEach { add("game_id" to it) }
                 type?.let { add("type" to it) }
                 language.forEach { add("language" to it) }
-                add("first" to first.toString())
-                before?.let { add("before" to it) }
-                after?.let { add("after" to it) }
             }
-        return http.get<Stream>("streams", params).data
+        return http.paginate<Stream>("streams", params)
+    }
+
+    /**
+     * [Twitch API: Get Streams](https://dev.twitch.tv/docs/api/reference/#get-streams)
+     *
+     * Gets a single page of streams matching the filter criteria.
+     *
+     * @param userIds filter by user IDs (max 100).
+     * @param userLogins filter by user login names (max 100).
+     * @param gameIds filter by game/category IDs (max 100).
+     * @param type filter by stream type: `all`, `live`. Default: `all`.
+     * @param language filter by language codes (max 100).
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [Stream] objects.
+     */
+    suspend fun getStreams(
+        userIds: List<String> = emptyList(),
+        userLogins: List<String> = emptyList(),
+        gameIds: List<String> = emptyList(),
+        type: String? = null,
+        language: List<String> = emptyList(),
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Stream> {
+        val params =
+            buildList {
+                userIds.forEach { add("user_id" to it) }
+                userLogins.forEach { add("user_login" to it) }
+                gameIds.forEach { add("game_id" to it) }
+                type?.let { add("type" to it) }
+                language.forEach { add("language" to it) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "streams", params = params, pageSize = pageSize)
     }
 
     /**
      * [Twitch API: Get Followed Streams](https://dev.twitch.tv/docs/api/reference/#get-followed-streams)
      *
-     * Gets the list of broadcasters that the user follows and that are streaming live.
+     * Gets all live streams of broadcasters that the user follows.
+     * Automatically paginates through all results.
      *
-     * @param userId the ID of the user whose list of followed streams you want to get. This ID
-     * must match the user ID in the access token.
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100 items per page. The default is 100.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of live streams of broadcasters that the specified user follows. The list
-     * is in descending order by the number of viewers watching the stream. The list is empty if
-     * none of the followed broadcasters are streaming live.
+     * @param userId the ID of the user whose list of followed streams you want to get. This ID must match the user ID in the access token.
+     * @return a [Flow] of [Stream] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_FOLLOWS)
+    fun getAllFollowedStreams(userId: String): Flow<Stream> {
+        val params = listOf("user_id" to userId)
+        return http
+            .paginate<Stream>("streams/followed", params)
+            .onStart { http.validateScopes(TwitchScope.USER_READ_FOLLOWS) }
+    }
+
+    /**
+     * [Twitch API: Get Followed Streams](https://dev.twitch.tv/docs/api/reference/#get-followed-streams)
+     *
+     * Gets a single page of live streams of broadcasters that the user follows.
+     *
+     * @param userId the ID of the user whose list of followed streams you want to get. This ID must match the user ID in the access token.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 100). Null uses the API default.
+     * @return a [Page] of [Stream] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_FOLLOWS)
     suspend fun getFollowedStreams(
         userId: String,
-        first: Int = 100,
-        after: String? = null,
-    ): List<Stream> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Stream> {
         http.validateScopes(TwitchScope.USER_READ_FOLLOWS)
         val params =
             buildList {
                 add("user_id" to userId)
-                add("first" to first.toString())
-                after?.let { add("after" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<Stream>("streams/followed", params).data
+        return http.getPage(endpoint = "streams/followed", params = params, pageSize = pageSize)
     }
 
     /**
@@ -158,42 +191,54 @@ class StreamResource internal constructor(
     /**
      * [Twitch API: Get Stream Markers](https://dev.twitch.tv/docs/api/reference/#get-stream-markers)
      *
-     * Gets a list of markers from the user's most recent stream or from the specified VOD/video.
-     * A marker is an arbitrary point in a live stream that the broadcaster or editor marked, so
-     * they can return to that spot later to create video highlights.
-     *
-     * The [userId] and [videoId] parameters are mutually exclusive.
+     * Gets all stream markers for the user or video.
+     * Automatically paginates through all results.
      *
      * @param userId a user ID. The request returns the markers from this user's most recent video.
-     * This ID must match the user ID in the access token or the user in the access token must be
-     * one of the broadcaster's editors.
-     * @param videoId a video on demand (VOD)/video ID. The request returns the markers from this
-     * VOD/video. The user in the access token must own the video or the user must be one of the
-     * broadcaster's editors.
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param before the cursor used to get the previous page of results.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of markers grouped by the user that created the marks.
+     * @param videoId a video on demand (VOD)/video ID.
+     * @return a [Flow] of [StreamMarkerGroup] objects.
+     */
+    @RequiresScope(TwitchScope.USER_READ_BROADCAST, TwitchScope.CHANNEL_MANAGE_BROADCAST)
+    fun getAllStreamMarkers(
+        userId: String? = null,
+        videoId: String? = null,
+    ): Flow<StreamMarkerGroup> {
+        val params =
+            buildList {
+                userId?.let { add("user_id" to it) }
+                videoId?.let { add("video_id" to it) }
+            }
+        return http
+            .paginate<StreamMarkerGroup>("streams/markers", params)
+            .onStart { http.validateAnyScope(TwitchScope.USER_READ_BROADCAST, TwitchScope.CHANNEL_MANAGE_BROADCAST) }
+    }
+
+    /**
+     * [Twitch API: Get Stream Markers](https://dev.twitch.tv/docs/api/reference/#get-stream-markers)
+     *
+     * Gets a single page of stream markers for the user or video.
+     *
+     * @param userId a user ID. The request returns the markers from this user's most recent video.
+     * @param videoId a video on demand (VOD)/video ID.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [StreamMarkerGroup] objects.
      */
     @RequiresScope(TwitchScope.USER_READ_BROADCAST, TwitchScope.CHANNEL_MANAGE_BROADCAST)
     suspend fun getStreamMarkers(
         userId: String? = null,
         videoId: String? = null,
-        first: Int = 20,
-        before: String? = null,
-        after: String? = null,
-    ): List<StreamMarkerGroup> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<StreamMarkerGroup> {
         http.validateAnyScope(TwitchScope.USER_READ_BROADCAST, TwitchScope.CHANNEL_MANAGE_BROADCAST)
         val params =
             buildList {
                 userId?.let { add("user_id" to it) }
                 videoId?.let { add("video_id" to it) }
-                add("first" to first.toString())
-                before?.let { add("before" to it) }
-                after?.let { add("after" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<StreamMarkerGroup>("streams/markers", params).data
+        return http.getPage(endpoint = "streams/markers", params = params, pageSize = pageSize)
     }
 }
 

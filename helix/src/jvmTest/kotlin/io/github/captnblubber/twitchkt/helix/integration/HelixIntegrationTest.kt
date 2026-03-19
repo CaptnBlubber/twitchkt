@@ -45,9 +45,9 @@ class HelixIntegrationTest :
 
                 val helix = TwitchHelix(httpClient, config)
 
-                val streams = helix.streams.getStreams()
-                streams.shouldNotBeEmpty()
-                val stream = streams.first()
+                val page = helix.streams.getStreams()
+                page.data.shouldNotBeEmpty()
+                val stream = page.data.first()
                 stream.id.shouldNotBeBlank()
                 stream.userId.shouldNotBeBlank()
                 stream.userLogin.shouldNotBeBlank()
