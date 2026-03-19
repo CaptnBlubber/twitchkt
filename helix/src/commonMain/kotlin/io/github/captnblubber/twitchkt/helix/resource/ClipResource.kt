@@ -2,11 +2,13 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.Clip
 import io.github.captnblubber.twitchkt.helix.model.ClipDownload
 import io.github.captnblubber.twitchkt.helix.model.CreatedClip
+import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
 
 /**
@@ -98,40 +100,25 @@ class ClipResource internal constructor(
     /**
      * [Twitch API: Get Clips](https://dev.twitch.tv/docs/api/reference/#get-clips)
      *
-     * Gets one or more video clips that were captured from streams.
-     * The [broadcasterId], [gameId], and [ids] parameters are mutually exclusive.
-     *
-     * When using pagination for clips, the maximum number of results returned over multiple
-     * requests will be approximately 1,000.
+     * Gets all clips matching the filter criteria.
+     * Automatically paginates through all results.
      *
      * @param broadcasterId an ID that identifies the broadcaster whose video clips you want to get.
      * @param gameId an ID that identifies the game whose clips you want to get.
-     * @param ids clip IDs to get. You may specify a maximum of 100 IDs. The API ignores
-     * duplicate IDs and IDs that aren't found.
-     * @param startedAt the start date used to filter clips. The API returns only clips within
-     * the start and end date window.
-     * @param endedAt the end date used to filter clips. If not specified, the time window is
-     * the start date plus one week.
-     * @param first the maximum number of clips to return per page (1-100, default 20).
-     * @param before the cursor used to get the previous page of results.
-     * @param after the cursor used to get the next page of results.
-     * @param isFeatured if `true`, returns only featured clips. If `false`, returns only
-     * non-featured clips. If `null`, returns all clips.
-     * @return the list of clips. For clips returned by [gameId] or [broadcasterId], the list is
-     * in descending order by view count. For lists returned by [ids], the list is in the same
-     * order as the input IDs.
+     * @param ids clip IDs to get (max 100).
+     * @param startedAt the start date used to filter clips.
+     * @param endedAt the end date used to filter clips.
+     * @param isFeatured if `true`, returns only featured clips. If `false`, only non-featured. If `null`, all clips.
+     * @return a [Flow] of [Clip] objects.
      */
-    suspend fun get(
+    fun getAllClips(
         broadcasterId: String? = null,
         gameId: String? = null,
         ids: List<String> = emptyList(),
         startedAt: Instant? = null,
         endedAt: Instant? = null,
-        first: Int = 20,
-        before: String? = null,
-        after: String? = null,
         isFeatured: Boolean? = null,
-    ): List<Clip> {
+    ): Flow<Clip> {
         val params =
             buildList {
                 broadcasterId?.let { add("broadcaster_id" to it) }
@@ -139,12 +126,47 @@ class ClipResource internal constructor(
                 ids.forEach { add("id" to it) }
                 startedAt?.let { add("started_at" to it.toString()) }
                 endedAt?.let { add("ended_at" to it.toString()) }
-                add("first" to first.toString())
-                before?.let { add("before" to it) }
-                after?.let { add("after" to it) }
                 isFeatured?.let { add("is_featured" to it.toString()) }
             }
-        return http.get<Clip>("clips", params).data
+        return http.paginate<Clip>("clips", params)
+    }
+
+    /**
+     * [Twitch API: Get Clips](https://dev.twitch.tv/docs/api/reference/#get-clips)
+     *
+     * Gets a single page of clips matching the filter criteria.
+     *
+     * @param broadcasterId an ID that identifies the broadcaster whose video clips you want to get.
+     * @param gameId an ID that identifies the game whose clips you want to get.
+     * @param ids clip IDs to get (max 100).
+     * @param startedAt the start date used to filter clips.
+     * @param endedAt the end date used to filter clips.
+     * @param isFeatured if `true`, returns only featured clips. If `false`, only non-featured. If `null`, all clips.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of clips to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [Clip] objects.
+     */
+    suspend fun get(
+        broadcasterId: String? = null,
+        gameId: String? = null,
+        ids: List<String> = emptyList(),
+        startedAt: Instant? = null,
+        endedAt: Instant? = null,
+        isFeatured: Boolean? = null,
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Clip> {
+        val params =
+            buildList {
+                broadcasterId?.let { add("broadcaster_id" to it) }
+                gameId?.let { add("game_id" to it) }
+                ids.forEach { add("id" to it) }
+                startedAt?.let { add("started_at" to it.toString()) }
+                endedAt?.let { add("ended_at" to it.toString()) }
+                isFeatured?.let { add("is_featured" to it.toString()) }
+                cursor?.let { add("after" to it) }
+            }
+        return http.getPage(endpoint = "clips", params = params, pageSize = pageSize)
     }
 
     /**

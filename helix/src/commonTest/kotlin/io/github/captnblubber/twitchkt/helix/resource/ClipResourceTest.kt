@@ -5,6 +5,8 @@ import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -15,6 +17,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import kotlin.time.Instant
 
@@ -74,7 +77,7 @@ class ClipResourceTest :
                         )
                     }
                 val resource = createResource(engine)
-                val clips = resource.get(broadcasterId = "456")
+                val page = resource.get(broadcasterId = "456")
 
                 Then("it should call the clips endpoint") {
                     val request = engine.requestHistory.first()
@@ -92,12 +95,12 @@ class ClipResourceTest :
                 }
 
                 Then("it should deserialize the clip") {
-                    clips shouldHaveSize 1
-                    clips[0].id shouldBe "RandomClip123"
-                    clips[0].title shouldBe "Great moment"
-                    clips[0].creatorName shouldBe "Clipper"
-                    clips[0].viewCount shouldBe 500
-                    clips[0].duration shouldBe 25.5
+                    page.data shouldHaveSize 1
+                    page.data[0].id shouldBe "RandomClip123"
+                    page.data[0].title shouldBe "Great moment"
+                    page.data[0].creatorName shouldBe "Clipper"
+                    page.data[0].viewCount shouldBe 500
+                    page.data[0].duration shouldBe 25.5
                 }
             }
 
@@ -208,6 +211,200 @@ class ClipResourceTest :
                     downloads[0].portraitDownloadUrl shouldBe "https://production.assets.clips.twitchcdn.net/clip1/portrait.mp4"
                     downloads[1].clipId shouldBe "clip2"
                     downloads[1].portraitDownloadUrl shouldBe null
+                }
+            }
+        }
+
+        val clipPaginationJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "clip-1",
+                        "url": "https://clips.twitch.tv/clip-1",
+                        "embed_url": "https://clips.twitch.tv/embed?clip=clip-1",
+                        "broadcaster_id": "456",
+                        "broadcaster_name": "Streamer",
+                        "creator_id": "789",
+                        "creator_name": "Clipper",
+                        "title": "Nice clip",
+                        "view_count": 100,
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "thumbnail_url": "https://example.com/thumb.jpg",
+                        "duration": 30.0
+                    }
+                ],
+                "pagination": {
+                    "cursor": "abc123"
+                }
+            }
+            """.trimIndent()
+
+        val clipLastPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "clip-2",
+                        "url": "https://clips.twitch.tv/clip-2",
+                        "embed_url": "https://clips.twitch.tv/embed?clip=clip-2",
+                        "broadcaster_id": "456",
+                        "broadcaster_name": "Streamer",
+                        "creator_id": "111",
+                        "creator_name": "OtherClipper",
+                        "title": "Another clip",
+                        "view_count": 50,
+                        "created_at": "2024-02-01T00:00:00Z",
+                        "thumbnail_url": "https://example.com/thumb2.jpg",
+                        "duration": 15.0
+                    }
+                ],
+                "pagination": {}
+            }
+            """.trimIndent()
+
+        val clipSecondPageJson =
+            """
+            {
+                "data": [
+                    {
+                        "id": "clip-1",
+                        "url": "https://clips.twitch.tv/clip-1",
+                        "embed_url": "https://clips.twitch.tv/embed?clip=clip-1",
+                        "broadcaster_id": "456",
+                        "broadcaster_name": "Streamer",
+                        "creator_id": "789",
+                        "creator_name": "Clipper",
+                        "title": "Nice clip",
+                        "view_count": 100,
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "thumbnail_url": "https://example.com/thumb.jpg",
+                        "duration": 30.0
+                    }
+                ],
+                "pagination": {
+                    "cursor": "def456"
+                }
+            }
+            """.trimIndent()
+
+        Given("getAllClips") {
+
+            When("called with a broadcasterId") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val clips = resource.getAllClips(broadcasterId = "456").toList()
+
+                Then("it should call the clips endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/clips"
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                }
+
+                Then("it should deserialize the clip") {
+                    clips.size shouldBe 1
+                    clips.first().id shouldBe "clip-2"
+                    clips.first().title shouldBe "Another clip"
+                }
+            }
+        }
+
+        Given("get - pagination") {
+
+            When("called without a cursor (first page)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipPaginationJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.get(broadcasterId = "456")
+
+                Then("it should not include an after cursor parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"].shouldBeNull()
+                }
+
+                Then("it should return the clip data") {
+                    page.data.size shouldBe 1
+                    page.data.first().id shouldBe "clip-1"
+                }
+
+                Then("it should return the next page cursor") {
+                    page.cursor.shouldNotBeNull()
+                    page.cursor shouldBe "abc123"
+                }
+            }
+
+            When("called with a cursor") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipSecondPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                val page = resource.get(broadcasterId = "456", cursor = "abc123")
+
+                Then("it should forward the cursor as the after parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["after"] shouldBe "abc123"
+                }
+
+                Then("it should return the cursor from the response") {
+                    page.cursor shouldBe "def456"
+                }
+            }
+
+            When("called with a pageSize") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipPaginationJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.get(broadcasterId = "456", pageSize = 50)
+
+                Then("it should pass the pageSize as the first parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "50"
+                }
+            }
+
+            When("called with isFeatured filter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipPaginationJson,
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.get(broadcasterId = "456", isFeatured = true)
+
+                Then("it should pass the is_featured parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["is_featured"] shouldBe "true"
                 }
             }
         }
