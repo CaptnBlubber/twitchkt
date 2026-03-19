@@ -2,6 +2,7 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.CreateRewardRequest
@@ -9,6 +10,8 @@ import io.github.captnblubber.twitchkt.helix.model.CustomReward
 import io.github.captnblubber.twitchkt.helix.model.RedemptionStatus
 import io.github.captnblubber.twitchkt.helix.model.RewardRedemption
 import io.github.captnblubber.twitchkt.helix.model.UpdateRewardRequest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.Serializable
 
 /**
@@ -120,21 +123,50 @@ class RewardResource internal constructor(
     /**
      * [Twitch API: Get Custom Reward Redemption](https://dev.twitch.tv/docs/api/reference/#get-custom-reward-redemption)
      *
-     * Gets a list of redemptions for the specified custom reward. The app used to create the reward
-     * is the only app that may get the redemptions.
+     * Gets all redemptions for the specified reward.
+     * Automatically paginates through all results.
      *
-     * @param broadcasterId the ID of the broadcaster that owns the custom reward. This ID must
-     * match the user ID found in the user OAuth token.
+     * @param broadcasterId the ID of the broadcaster that owns the custom reward. This ID must match the user ID found in the OAuth token.
      * @param rewardId the ID that identifies the custom reward whose redemptions you want to get.
-     * @param status the status of the redemptions to return. Possible case-sensitive values are:
-     * `CANCELED`, `FULFILLED`, `UNFULFILLED`. Required if [ids] is not specified.
-     * @param ids a list of IDs to filter the redemptions by. You may specify a maximum of 50 IDs.
-     * @param sort the order to sort redemptions by. Possible case-sensitive values are: `OLDEST`,
-     * `NEWEST`. The default is `OLDEST`.
-     * @param after the cursor used to get the next page of results.
-     * @param first the maximum number of redemptions to return per page. The minimum is 1 and
-     * the maximum is 50. The default is 20.
-     * @return the list of redemptions for the specified reward.
+     * @param status filters the list by redemption status. Possible values: `CANCELED`, `FULFILLED`, `UNFULFILLED`.
+     * @param ids a list of IDs to filter the redemptions by (max 50).
+     * @param sort the order to sort redemptions by. Possible values: `OLDEST`, `NEWEST`. Default: `OLDEST`.
+     * @return a [Flow] of [RewardRedemption] objects.
+     */
+    @RequiresScope(TwitchScope.CHANNEL_READ_REDEMPTIONS, TwitchScope.CHANNEL_MANAGE_REDEMPTIONS)
+    fun getAllRedemptions(
+        broadcasterId: String,
+        rewardId: String,
+        status: String? = null,
+        ids: List<String> = emptyList(),
+        sort: String? = null,
+    ): Flow<RewardRedemption> {
+        val params =
+            buildList {
+                add("broadcaster_id" to broadcasterId)
+                add("reward_id" to rewardId)
+                status?.let { add("status" to it) }
+                ids.forEach { add("id" to it) }
+                sort?.let { add("sort" to it) }
+            }
+        return http
+            .paginate<RewardRedemption>("channel_points/custom_rewards/redemptions", params)
+            .onStart { http.validateAnyScope(TwitchScope.CHANNEL_READ_REDEMPTIONS, TwitchScope.CHANNEL_MANAGE_REDEMPTIONS) }
+    }
+
+    /**
+     * [Twitch API: Get Custom Reward Redemption](https://dev.twitch.tv/docs/api/reference/#get-custom-reward-redemption)
+     *
+     * Gets a single page of redemptions for the specified reward.
+     *
+     * @param broadcasterId the ID of the broadcaster that owns the custom reward. This ID must match the user ID found in the OAuth token.
+     * @param rewardId the ID that identifies the custom reward whose redemptions you want to get.
+     * @param status filters the list by redemption status. Possible values: `CANCELED`, `FULFILLED`, `UNFULFILLED`.
+     * @param ids a list of IDs to filter the redemptions by (max 50).
+     * @param sort the order to sort redemptions by. Possible values: `OLDEST`, `NEWEST`. Default: `OLDEST`.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of redemptions to return per page (1-50, default 20). Null uses the API default.
+     * @return a [Page] of [RewardRedemption] objects.
      */
     @RequiresScope(TwitchScope.CHANNEL_READ_REDEMPTIONS, TwitchScope.CHANNEL_MANAGE_REDEMPTIONS)
     suspend fun getRedemptions(
@@ -143,9 +175,9 @@ class RewardResource internal constructor(
         status: String? = null,
         ids: List<String> = emptyList(),
         sort: String? = null,
-        after: String? = null,
-        first: Int = 20,
-    ): List<RewardRedemption> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<RewardRedemption> {
         http.validateAnyScope(TwitchScope.CHANNEL_READ_REDEMPTIONS, TwitchScope.CHANNEL_MANAGE_REDEMPTIONS)
         val params =
             buildList {
@@ -154,10 +186,9 @@ class RewardResource internal constructor(
                 status?.let { add("status" to it) }
                 ids.forEach { add("id" to it) }
                 sort?.let { add("sort" to it) }
-                after?.let { add("after" to it) }
-                add("first" to first.toString())
+                cursor?.let { add("after" to it) }
             }
-        return http.get<RewardRedemption>("channel_points/custom_rewards/redemptions", params).data
+        return http.getPage(endpoint = "channel_points/custom_rewards/redemptions", params = params, pageSize = pageSize)
     }
 
     /**
