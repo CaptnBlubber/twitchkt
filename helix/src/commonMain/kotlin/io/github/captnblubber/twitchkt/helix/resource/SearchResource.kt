@@ -1,8 +1,10 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
+import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.Game
 import io.github.captnblubber.twitchkt.helix.model.SearchedChannel
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Twitch Helix Search API resource.
@@ -17,68 +19,85 @@ class SearchResource internal constructor(
     /**
      * [Twitch API: Search Categories](https://dev.twitch.tv/docs/api/reference/#search-categories)
      *
-     * Gets the games or categories that match the specified query.
+     * Gets all categories that match the specified query.
+     * Automatically paginates through all results.
      *
-     * To match, the category's name must contain all parts of the query string. For example,
-     * if the query string is "just for]", the response includes categories with names that
-     * contain "just" and "for" but not necessarily in that order.
+     * @param query the URI-encoded search string.
+     * @return a [Flow] of [Game] objects.
+     */
+    fun getAllCategories(query: String): Flow<Game> {
+        val params = listOf("query" to query)
+        return http.paginate<Game>("search/categories", params)
+    }
+
+    /**
+     * [Twitch API: Search Categories](https://dev.twitch.tv/docs/api/reference/#search-categories)
      *
-     * @param query the URI-encoded search string. For example, encode "#702702" as "%23702702".
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100 items per page. The default is 20.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of categories that match the query.
+     * Gets a single page of categories that match the specified query.
+     *
+     * @param query the URI-encoded search string.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [Game] objects.
      */
     suspend fun categories(
         query: String,
-        first: Int = 20,
-        after: String? = null,
-    ): List<Game> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<Game> {
         val params =
             buildList {
                 add("query" to query)
-                add("first" to first.toString())
-                after?.let { add("after" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<Game>("search/categories", params).data
+        return http.getPage(endpoint = "search/categories", params = params, pageSize = pageSize)
     }
 
     /**
      * [Twitch API: Search Channels](https://dev.twitch.tv/docs/api/reference/#search-channels)
      *
-     * Gets the channels that match the specified query and have streamed content within the
-     * past 6 months.
+     * Gets all channels that match the specified query.
+     * Automatically paginates through all results.
      *
-     * The fields that the API uses for comparison depends on the value that the [liveOnly]
-     * query parameter is set to. If `true`, the API matches on the broadcaster's login name.
-     * Otherwise, the API matches on the broadcaster's login name and display name.
+     * @param query the URI-encoded search string.
+     * @param liveOnly a Boolean value that determines whether the response includes only channels that are currently streaming live. Default: `false`.
+     * @return a [Flow] of [SearchedChannel] objects.
+     */
+    fun getAllChannels(
+        query: String,
+        liveOnly: Boolean = false,
+    ): Flow<SearchedChannel> {
+        val params =
+            listOf(
+                "query" to query,
+                "live_only" to liveOnly.toString(),
+            )
+        return http.paginate<SearchedChannel>("search/channels", params)
+    }
+
+    /**
+     * [Twitch API: Search Channels](https://dev.twitch.tv/docs/api/reference/#search-channels)
      *
-     * To match, the beginning of the broadcaster's name must match the query string. The
-     * comparison is case insensitive. If the query string is "]]a]b]c", the response includes
-     * all names that begin with "abc".
+     * Gets a single page of channels that match the specified query.
      *
-     * @param query the URI-encoded search string. For example, encode "#702702" as "%23702702".
-     * @param first the maximum number of items to return per page in the response. The minimum
-     * page size is 1 item per page and the maximum is 100. The default is 20.
-     * @param liveOnly a Boolean value that determines whether the response includes only
-     * channels that are currently streaming live. Set to `true` to get only channels that are
-     * streaming live; otherwise, `false` to get live and offline channels. The default is `false`.
-     * @param after the cursor used to get the next page of results.
-     * @return the list of channels that match the query.
+     * @param query the URI-encoded search string.
+     * @param liveOnly a Boolean value that determines whether the response includes only channels that are currently streaming live. Default: `false`.
+     * @param cursor the cursor used to get the next page of results.
+     * @param pageSize the maximum number of items to return per page (1-100, default 20). Null uses the API default.
+     * @return a [Page] of [SearchedChannel] objects.
      */
     suspend fun channels(
         query: String,
-        first: Int = 20,
         liveOnly: Boolean = false,
-        after: String? = null,
-    ): List<SearchedChannel> {
+        cursor: String? = null,
+        pageSize: Int? = null,
+    ): Page<SearchedChannel> {
         val params =
             buildList {
                 add("query" to query)
-                add("first" to first.toString())
                 add("live_only" to liveOnly.toString())
-                after?.let { add("after" to it) }
+                cursor?.let { add("after" to it) }
             }
-        return http.get<SearchedChannel>("search/channels", params).data
+        return http.getPage(endpoint = "search/channels", params = params, pageSize = pageSize)
     }
 }
