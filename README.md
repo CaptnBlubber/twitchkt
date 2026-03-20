@@ -124,7 +124,8 @@ Fetch a user, check if a stream is live, or update channel info — all as typed
 val users = helix.users.getUsers(logins = listOf("captnblubber"))
 
 // Check if a channel is currently live
-val streams = helix.streams.getStreams(userLogins = listOf("captnblubber"))
+val page = helix.streams.getStreams(userLogins = listOf("captnblubber"))
+val streams = page.data
 
 // Update the stream title (requires channel:manage:broadcast scope)
 helix.channels.update(
@@ -133,12 +134,20 @@ helix.channels.update(
 )
 ```
 
-Paginated endpoints return a `Flow` — TwitchKt fetches subsequent pages automatically as you collect:
+Paginated endpoints offer two access patterns — an auto-paginating `Flow` and a single-page `Page<T>`:
 
 ```kotlin
-helix.followers.list(broadcasterId = "123456").collect { follower ->
+// Option 1: Auto-paginate with Flow — fetches all pages as you collect
+helix.followers.listAll(broadcasterId = "123456").collect { follower ->
     println(follower.userLogin)
 }
+
+// Option 2: Single page with manual cursor control
+val page = helix.followers.list(broadcasterId = "123456", pageSize = 50)
+page.data.forEach { println(it.userLogin) }
+
+// Fetch the next page using the cursor
+val nextPage = helix.followers.list(broadcasterId = "123456", cursor = page.cursor)
 ```
 
 ### EventSub WebSocket

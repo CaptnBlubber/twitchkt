@@ -43,7 +43,15 @@ helix.channels.update(
 ### Streams
 
 ```kotlin
-val live = helix.streams.getStreams(userLogins = listOf("captnblubber"))
+// Auto-paginate all live streams for a game
+helix.streams.getAllStreams(gameIds = listOf("509658")).collect { stream ->
+    println("${stream.userName} — ${stream.viewerCount} viewers")
+}
+
+// Or fetch a single page with manual cursor control
+val page = helix.streams.getStreams(userLogins = listOf("captnblubber"))
+println(page.data.firstOrNull()?.title)
+println("Next cursor: ${page.cursor}")
 ```
 
 ### Chat
@@ -57,18 +65,28 @@ val channelBadges = helix.chat.getChannelBadges(broadcasterId = "123456")
 ### Followers
 
 ```kotlin
-helix.followers.list(broadcasterId = "123456").collect { follower ->
+// Auto-paginate all followers
+helix.followers.listAll(broadcasterId = "123456").collect { follower ->
     println(follower.userLogin)
 }
+
+// Or fetch a single page
+val page = helix.followers.list(broadcasterId = "123456")
+println("${page.data.size} followers, next cursor: ${page.cursor}")
+
 val count = helix.followers.getTotal(broadcasterId = "123456")
 ```
 
 ### Subscriptions
 
 ```kotlin
-helix.subscriptions.list(broadcasterId = "123456").collect { sub ->
+// Auto-paginate all subscriptions
+helix.subscriptions.listAll(broadcasterId = "123456").collect { sub ->
     println("${sub.userLogin} — tier ${sub.tier}")
 }
+
+// Or fetch a single page
+val page = helix.subscriptions.list(broadcasterId = "123456", pageSize = 50)
 ```
 
 ### Polls
@@ -104,35 +122,47 @@ helix.ads.startCommercial(broadcasterId = "123456", duration = 30)
 ### Moderation
 
 ```kotlin
-helix.moderation.getModerators(broadcasterId = "123456").collect { mod -> println(mod.userLogin) }
-helix.moderation.getVIPs(broadcasterId = "123456").collect { vip -> println(vip.userLogin) }
+// Auto-paginate all moderators
+helix.moderation.getAllModerators(broadcasterId = "123456").collect { mod -> println(mod.userLogin) }
+
+// Single page of banned users with manual cursor control
+val bannedPage = helix.moderation.getBanned(broadcasterId = "123456", pageSize = 50)
+bannedPage.data.forEach { println("${it.userName} — ${it.reason}") }
+val nextPage = helix.moderation.getBanned(broadcasterId = "123456", cursor = bannedPage.cursor)
+
 helix.moderation.sendShoutout(fromId = "123456", toId = "789", moderatorId = "123456")
 ```
 
 ### Search
 
 ```kotlin
-val games = helix.search.categories(query = "Minecraft", first = 5)
+// Auto-paginate all matching categories
+helix.search.getAllCategories(query = "Minecraft").collect { game ->
+    println(game.name)
+}
+
+// Or fetch a single page
+val page = helix.search.categories(query = "Minecraft", pageSize = 5)
 ```
 
 ## Resource Reference
 
 | Property | Resource | Key Methods | Required Scopes |
 |---|---|---|---|
-| `helix.users` | Users | `getUsers(ids, logins)` | None |
-| `helix.channels` | Channels | `getInformation`, `update`, `getEditors`, `getFollowedChannels` | `channel:manage:broadcast` (write) |
-| `helix.streams` | Streams | `getStreams(userIds, userLogins, gameIds)` | None |
-| `helix.chat` | Chat | `sendMessage`, `getChatters`, `getChannelEmotes`, `getGlobalEmotes`, `getEmoteSets`, `getSettings`, `updateSettings`, `sendAnnouncement`, `getUserColor`, `updateUserColor`, `getGlobalBadges`, `getChannelBadges` | Varies per method |
-| `helix.followers` | Followers | `list` (Flow), `getTotal` | `moderator:read:followers` |
-| `helix.subscriptions` | Subscriptions | `list` (Flow), `createEventSub` | `channel:read:subscriptions` (list) |
+| `helix.users` | Users | `getUsers(ids, logins)`, `getBlockList` / `getAllBlockedUsers` (Flow) | `user:read:blocked_users` (block list) |
+| `helix.channels` | Channels | `getInformation`, `update`, `getEditors`, `getFollowedChannels` / `getAllFollowedChannels` (Flow) | `channel:manage:broadcast` (write) |
+| `helix.streams` | Streams | `getStreams` / `getAllStreams` (Flow), `getFollowedStreams` / `getAllFollowedStreams` (Flow), `getStreamMarkers` / `getAllStreamMarkers` (Flow) | Varies per method |
+| `helix.chat` | Chat | `sendMessage`, `getChatters` / `getAllChatters` (Flow), `getUserEmotes` / `getAllUserEmotes` (Flow), `getChannelEmotes`, `getGlobalEmotes`, `getEmoteSets`, `getSettings`, `updateSettings`, `sendAnnouncement`, `getUserColor`, `updateUserColor`, `getGlobalBadges`, `getChannelBadges` | Varies per method |
+| `helix.followers` | Followers | `list` / `listAll` (Flow), `getTotal` | `moderator:read:followers` |
+| `helix.subscriptions` | Subscriptions | `list` / `listAll` (Flow), `get`, `createEventSub` | `channel:read:subscriptions` (list) |
 | `helix.polls` | Polls | `create`, `end` | `channel:manage:polls` |
 | `helix.predictions` | Predictions | `list`, `create`, `end` | `channel:manage:predictions` |
 | `helix.ads` | Ads | `getSchedule`, `startCommercial`, `snoozeNextAd` | `channel:read:ads` / `channel:manage:ads` |
-| `helix.rewards` | Channel Points | `list`, `create`, `update`, `updateRedemptionStatus` | `channel:read:redemptions` / `channel:manage:redemptions` |
-| `helix.moderation` | Moderation | `getModerators` (Flow), `getVIPs` (Flow), `sendShoutout`, `ban`, `unban`, `getBanned`, `getBlockedTerms`, `addBlockedTerm`, `removeBlockedTerm`, `deleteMessage`, `addModerator`, `removeModerator`, `addVip`, `removeVip`, `getShieldMode`, `updateShieldMode`, `warn`, `getUnbanRequests`, `resolveUnbanRequest` | Varies per method |
+| `helix.rewards` | Channel Points | `list`, `create`, `update`, `getRedemptions` / `getAllRedemptions` (Flow), `updateRedemptionStatus` | `channel:read:redemptions` / `channel:manage:redemptions` |
+| `helix.moderation` | Moderation | `getModerators` / `getAllModerators` (Flow), `getVIPs` / `getAllVIPs` (Flow), `getBanned` / `getAllBanned` (Flow), `getBlockedTerms` / `getAllBlockedTerms` (Flow), `getModeratedChannels` / `getAllModeratedChannels` (Flow), `getUnbanRequests` / `getAllUnbanRequests` (Flow), `sendShoutout`, `ban`, `unban`, `addBlockedTerm`, `removeBlockedTerm`, `deleteMessage`, `addModerator`, `removeModerator`, `addVip`, `removeVip`, `getShieldMode`, `updateShieldMode`, `warn`, `resolveUnbanRequest` | Varies per method |
 | `helix.raids` | Raids | `start`, `cancel` | `channel:manage:raids` |
-| `helix.clips` | Clips | `create`, `get` | `clips:edit` (create) |
-| `helix.videos` | Videos | `get`, `delete` | `channel:manage:videos` (delete) |
+| `helix.clips` | Clips | `create`, `get` / `getAllClips` (Flow) | `clips:edit` (create) |
+| `helix.videos` | Videos | `get` / `getAllVideos` (Flow), `delete` | `channel:manage:videos` (delete) |
 | `helix.schedule` | Schedule | `getSchedule`, `createSegment`, `updateSegment`, `deleteSegment` | `channel:manage:schedule` (write) |
 | `helix.goals` | Goals | `getGoals` | `channel:read:goals` |
 | `helix.bits` | Bits | `getLeaderboard`, `getCheermotes` | `bits:read` (leaderboard) |
@@ -140,9 +170,11 @@ val games = helix.search.categories(query = "Minecraft", first = 5)
 | `helix.teams` | Teams | `getChannelTeams`, `getTeam` | None |
 | `helix.hypeTrain` | Hype Train | `getEvents` | `channel:read:hype_train` |
 | `helix.whispers` | Whispers | `send` | `user:manage:whispers` |
-| `helix.search` | Search | `categories(query)`, `channels(query)` | None |
+| `helix.search` | Search | `categories` / `getAllCategories` (Flow), `channels` / `getAllChannels` (Flow) | None |
 
-Paginated methods return `Flow<T>` and fetch all pages automatically using cursor-based pagination.
+Paginated endpoints offer two access patterns:
+- **`getAllXxx()`** returns `Flow<T>` — fetches all pages automatically as you collect.
+- **`getXxx()`** returns `Page<T>` — fetches a single page; use `page.cursor` to request the next page manually.
 
 For full method signatures, parameters, and response models, see the [API documentation](https://captnblubber.github.io/twitchkt/).
 
