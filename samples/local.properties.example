@@ -1,0 +1,13 @@
+# Copy this file to local.properties and fill in your values.
+#
+# To get a token for quick testing, you can use https://twitchtokengenerator.com/
+# DISCLAIMER: We do not own or operate twitchtokengenerator.com. Treat tokens as
+# secrets and never commit them. For production applications, set up your own OAuth
+# flow with a registered Twitch application.
+
+twitch.token=YOUR_TOKEN_HERE
+twitch.clientId=YOUR_CLIENT_ID_HERE
+
+# Required for helix-write and eventsub samples:
+twitch.broadcasterId=YOUR_BROADCASTER_ID_HERE
+twitch.userId=YOUR_USER_ID_HERE
