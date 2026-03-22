@@ -1,0 +1,59 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please search existing issues first to avoid duplicates.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which module does this relate to?
+      options:
+        - twitchkt-core
+        - twitchkt-auth
+        - twitchkt-helix
+        - twitchkt-eventsub
+        - twitchkt-irc
+        - twitchkt-logging
+        - twitchkt-logging-kermit
+        - twitchkt-bom
+        - New module
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve? Is this related to a frustration?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context, code samples, or references.
+    validations:
+      required: false
