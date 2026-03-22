@@ -9,6 +9,8 @@ dependencies {
     implementation(libs.plugin.spotless)
     implementation(libs.plugin.vanniktech.publish)
     implementation(libs.plugin.dokka)
+    implementation(libs.plugin.ksp)
+    implementation(libs.plugin.kotest)
 }
 
 tasks {

@@ -12,6 +12,8 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             apply(plugin = "org.jetbrains.kotlin.multiplatform")
+            apply(plugin = "com.google.devtools.ksp")
+            apply(plugin = "io.kotest")
             apply(plugin = "org.jetbrains.dokka")
             apply(plugin = "twitchkt.spotless")
 
@@ -27,9 +29,9 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
                     }
                 }
 
-                // JS
+                // JS — nested test styles (BehaviorSpec) are not supported on JS
                 js(IR) {
-                    browser {
+                    nodejs {
                         testTask {
                             enabled = false
                         }
@@ -39,11 +41,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
                 // Wasm
                 @OptIn(ExperimentalWasmDsl::class)
                 wasmJs {
-                    browser {
-                        testTask {
-                            enabled = false
-                        }
-                    }
+                    nodejs()
                 }
 
                 // iOS

@@ -1,5 +1,6 @@
 [versions]
 kotest = "6.1.2"
+ksp = "2.3.6"
 mockk = "1.14.9"
 kotlin = "2.3.10"
 kotlinx-coroutines = "1.10.2"
@@ -34,10 +35,14 @@ plugin-kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin",
 plugin-spotless = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
 plugin-vanniktech-publish = { group = "com.vanniktech", name = "gradle-maven-publish-plugin", version.ref = "vanniktech-publish" }
 plugin-dokka = { group = "org.jetbrains.dokka", name = "dokka-gradle-plugin", version.ref = "dokka" }
+plugin-ksp = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
+plugin-kotest = { group = "io.kotest", name = "kotest-framework-plugin-gradle", version.ref = "kotest" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotest = { id = "io.kotest", version.ref = "kotest" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
