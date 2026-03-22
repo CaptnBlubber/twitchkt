@@ -1,24 +1,15 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
-import kotlinx.serialization.json.Json
 import kotlin.time.Instant
 
 class ClipResourceTest :
@@ -26,24 +17,7 @@ class ClipResourceTest :
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): ClipResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return ClipResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = ClipResource(createHelixClient(engine))
 
         Given("get") {
 
@@ -73,7 +47,7 @@ class ClipResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -110,7 +84,7 @@ class ClipResourceTest :
                         respond(
                             content = """{"data": []}""",
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -135,7 +109,7 @@ class ClipResourceTest :
                         respond(
                             content = """{"data": []}""",
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -172,7 +146,7 @@ class ClipResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -296,7 +270,7 @@ class ClipResourceTest :
                         respond(
                             content = clipLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -328,7 +302,7 @@ class ClipResourceTest :
                         respond(
                             content = clipPaginationJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -356,7 +330,7 @@ class ClipResourceTest :
                         respond(
                             content = clipSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -378,7 +352,7 @@ class ClipResourceTest :
                         respond(
                             content = clipPaginationJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -396,7 +370,7 @@ class ClipResourceTest :
                         respond(
                             content = clipPaginationJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)

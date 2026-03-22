@@ -1,48 +1,22 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.UnbanRequestStatus
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
-import kotlinx.serialization.json.Json
 
 class ModerationResourceTest :
     BehaviorSpec({
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): ModerationResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return ModerationResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = ModerationResource(createHelixClient(engine))
 
         val singleItemJson =
             """
@@ -98,7 +72,7 @@ class ModerationResourceTest :
                         respond(
                             content = lastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -133,7 +107,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -172,7 +146,7 @@ class ModerationResourceTest :
                         respond(
                             content = secondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -194,7 +168,7 @@ class ModerationResourceTest :
                         respond(
                             content = lastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -216,7 +190,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -234,7 +208,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -322,7 +296,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -363,7 +337,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -392,7 +366,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -419,7 +393,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -436,7 +410,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -458,7 +432,7 @@ class ModerationResourceTest :
                         respond(
                             content = unbanRequestJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -538,7 +512,7 @@ class ModerationResourceTest :
                         respond(
                             content = blockedTermLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -573,7 +547,7 @@ class ModerationResourceTest :
                         respond(
                             content = blockedTermJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -602,7 +576,7 @@ class ModerationResourceTest :
                         respond(
                             content = blockedTermSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -624,7 +598,7 @@ class ModerationResourceTest :
                         respond(
                             content = blockedTermLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -641,7 +615,7 @@ class ModerationResourceTest :
                         respond(
                             content = blockedTermJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -726,7 +700,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -761,7 +735,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -795,7 +769,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -817,7 +791,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -839,7 +813,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -857,7 +831,7 @@ class ModerationResourceTest :
                         respond(
                             content = bannedUserJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -924,7 +898,7 @@ class ModerationResourceTest :
                         respond(
                             content = moderatedChannelLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -958,7 +932,7 @@ class ModerationResourceTest :
                         respond(
                             content = moderatedChannelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -987,7 +961,7 @@ class ModerationResourceTest :
                         respond(
                             content = moderatedChannelSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1009,7 +983,7 @@ class ModerationResourceTest :
                         respond(
                             content = moderatedChannelLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1026,7 +1000,7 @@ class ModerationResourceTest :
                         respond(
                             content = moderatedChannelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1047,7 +1021,7 @@ class ModerationResourceTest :
                         respond(
                             content = lastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1082,7 +1056,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1121,7 +1095,7 @@ class ModerationResourceTest :
                         respond(
                             content = secondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1143,7 +1117,7 @@ class ModerationResourceTest :
                         respond(
                             content = lastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1165,7 +1139,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -1183,7 +1157,7 @@ class ModerationResourceTest :
                         respond(
                             content = singleItemJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)

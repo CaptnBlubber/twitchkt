@@ -1,50 +1,24 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.error.TwitchApiException
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
-import kotlinx.serialization.json.Json
 
 class UserResourceTest :
     BehaviorSpec({
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): UserResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return UserResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = UserResource(createHelixClient(engine))
 
         Given("getUsers") {
 
@@ -71,7 +45,7 @@ class UserResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -115,7 +89,7 @@ class UserResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -149,7 +123,7 @@ class UserResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -223,7 +197,7 @@ class UserResourceTest :
                         respond(
                             content = blockedUserLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -257,7 +231,7 @@ class UserResourceTest :
                         respond(
                             content = blockedUserJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -286,7 +260,7 @@ class UserResourceTest :
                         respond(
                             content = blockedUserSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -308,7 +282,7 @@ class UserResourceTest :
                         respond(
                             content = blockedUserLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -325,7 +299,7 @@ class UserResourceTest :
                         respond(
                             content = blockedUserJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -347,7 +321,7 @@ class UserResourceTest :
                             content =
                                 """{"error":"Unauthorized","message":"Invalid token"}""",
                             status = HttpStatusCode.Unauthorized,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -369,7 +343,7 @@ class UserResourceTest :
                             content =
                                 """{"data": []}""",
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -388,7 +362,7 @@ class UserResourceTest :
                             content =
                                 """{"error":"Bad Request","message":"Invalid request"}""",
                             status = HttpStatusCode.BadRequest,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -410,7 +384,7 @@ class UserResourceTest :
                             content =
                                 """{"error":"Forbidden","message":"Access denied"}""",
                             status = HttpStatusCode.Forbidden,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -432,7 +406,7 @@ class UserResourceTest :
                             content =
                                 """{"error":"Not Found","message":"User not found"}""",
                             status = HttpStatusCode.NotFound,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)

@@ -1,8 +1,5 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.VideoPeriod
 import io.github.captnblubber.twitchkt.helix.model.VideoSort
 import io.github.captnblubber.twitchkt.helix.model.VideoType
@@ -10,41 +7,18 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
-import kotlinx.serialization.json.Json
 
 class VideoResourceTest :
     BehaviorSpec({
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): VideoResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return VideoResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = VideoResource(createHelixClient(engine))
 
         val videoJson =
             """
@@ -122,7 +96,7 @@ class VideoResourceTest :
                         respond(
                             content = videoLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -159,7 +133,7 @@ class VideoResourceTest :
                         respond(
                             content = videoJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -194,7 +168,7 @@ class VideoResourceTest :
                         respond(
                             content = videoSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -216,7 +190,7 @@ class VideoResourceTest :
                         respond(
                             content = videoLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -233,7 +207,7 @@ class VideoResourceTest :
                         respond(
                             content = videoJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -251,7 +225,7 @@ class VideoResourceTest :
                         respond(
                             content = videoJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)

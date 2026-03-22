@@ -16,10 +16,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
@@ -29,24 +27,7 @@ class ChannelResourceTest :
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): ChannelResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return ChannelResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = ChannelResource(createHelixClient(engine))
 
         Given("getInformation") {
 
@@ -75,7 +56,7 @@ class ChannelResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -131,7 +112,7 @@ class ChannelResourceTest :
                                 }
                                 """.trimIndent(),
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -268,7 +249,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -302,7 +283,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -331,7 +312,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -353,7 +334,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -370,7 +351,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -388,7 +369,7 @@ class ChannelResourceTest :
                         respond(
                             content = followedChannelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -410,7 +391,7 @@ class ChannelResourceTest :
                             content =
                                 """{"data": []}""",
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -429,7 +410,7 @@ class ChannelResourceTest :
                             content =
                                 """{"error":"Unauthorized","message":"Invalid token"}""",
                             status = HttpStatusCode.Unauthorized,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -451,7 +432,7 @@ class ChannelResourceTest :
                             content =
                                 """{"error":"Bad Request","message":"Invalid request"}""",
                             status = HttpStatusCode.BadRequest,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -479,8 +460,8 @@ class ChannelResourceTest :
                     }
                 val config =
                     TwitchKtConfig(
-                        clientId = testClientId,
-                        tokenProvider = TokenProvider { testToken },
+                        clientId = TEST_CLIENT_ID,
+                        tokenProvider = TokenProvider { TEST_TOKEN },
                         scopeProvider = ScopeProvider { setOf(TwitchScope.BITS_READ) },
                     )
                 val resource = ChannelResource(HelixHttpClient(httpClient, config))
@@ -502,7 +483,7 @@ class ChannelResourceTest :
                             content =
                                 """{"error":"Unauthorized","message":"Invalid token"}""",
                             status = HttpStatusCode.Unauthorized,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -524,7 +505,7 @@ class ChannelResourceTest :
                             content =
                                 """{"error":"Internal Server Error","message":"Something went wrong"}""",
                             status = HttpStatusCode.InternalServerError,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)

@@ -1,47 +1,21 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
-import io.github.captnblubber.twitchkt.TwitchKtConfig
-import io.github.captnblubber.twitchkt.auth.TokenProvider
-import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
-import kotlinx.serialization.json.Json
 
 class SearchResourceTest :
     BehaviorSpec({
 
         coroutineTestScope = true
 
-        val testToken = "test-token"
-        val testClientId = "test-client-id"
-        val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-        fun createResource(engine: MockEngine): SearchResource {
-            val httpClient =
-                HttpClient(engine) {
-                    install(ContentNegotiation) {
-                        json(Json { ignoreUnknownKeys = true })
-                    }
-                }
-            val config =
-                TwitchKtConfig(
-                    clientId = testClientId,
-                    tokenProvider = TokenProvider { testToken },
-                )
-            return SearchResource(HelixHttpClient(httpClient, config))
-        }
+        fun createResource(engine: MockEngine) = SearchResource(createHelixClient(engine))
 
         val categoryJson =
             """
@@ -97,7 +71,7 @@ class SearchResourceTest :
                         respond(
                             content = categoryLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -126,7 +100,7 @@ class SearchResourceTest :
                         respond(
                             content = categoryJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -155,7 +129,7 @@ class SearchResourceTest :
                         respond(
                             content = categorySecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -177,7 +151,7 @@ class SearchResourceTest :
                         respond(
                             content = categoryJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -264,7 +238,7 @@ class SearchResourceTest :
                         respond(
                             content = channelLastPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -293,7 +267,7 @@ class SearchResourceTest :
                         respond(
                             content = channelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -323,7 +297,7 @@ class SearchResourceTest :
                         respond(
                             content = channelSecondPageJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -345,7 +319,7 @@ class SearchResourceTest :
                         respond(
                             content = channelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
@@ -363,7 +337,7 @@ class SearchResourceTest :
                         respond(
                             content = channelJson,
                             status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
+                            headers = JSON_HEADERS,
                         )
                     }
                 val resource = createResource(engine)
