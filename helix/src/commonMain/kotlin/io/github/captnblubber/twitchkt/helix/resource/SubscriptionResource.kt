@@ -3,22 +3,16 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.error.TwitchApiException
-import io.github.captnblubber.twitchkt.helix.EventSubSubscriptionType
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
-import io.github.captnblubber.twitchkt.helix.internal.requireFirst
-import io.github.captnblubber.twitchkt.helix.model.EventSubSubscription
 import io.github.captnblubber.twitchkt.helix.model.Subscription
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 /**
- * Twitch Helix Subscriptions and EventSub API resource.
+ * Twitch Helix Subscriptions API resource.
  *
- * Provides methods for retrieving broadcaster subscriptions, checking user subscriptions,
- * and managing EventSub subscriptions.
+ * Provides methods for retrieving broadcaster subscriptions and checking user subscriptions.
  *
  * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-broadcaster-subscriptions">Twitch API Reference - Subscriptions</a>
  */
@@ -34,36 +28,11 @@ class SubscriptionResource internal constructor(
      * @return a [Flow] emitting each subscription.
      */
     @RequiresScope(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
-    fun listAll(broadcasterId: String): Flow<Subscription> {
+    fun getAll(broadcasterId: String): Flow<Subscription> {
         val params = listOf("broadcaster_id" to broadcasterId)
         return http
             .paginate<Subscription>("subscriptions", params)
             .onStart { http.validateScopes(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS) }
-    }
-
-    /**
-     * [Twitch API: Get Broadcaster Subscriptions](https://dev.twitch.tv/docs/api/reference/#get-broadcaster-subscriptions)
-     *
-     * Fetches a single page of subscriptions.
-     *
-     * @param broadcasterId the broadcaster's ID. This ID must match the user ID in the access token.
-     * @param cursor the cursor used to get the next page of results. Pass `null` to get the first page.
-     * @param pageSize the maximum number of items to return (1–100). `null` uses the API default (20).
-     * @return a [Page] containing the subscriptions on this page and the cursor for the next page.
-     */
-    @RequiresScope(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
-    suspend fun list(
-        broadcasterId: String,
-        cursor: String? = null,
-        pageSize: Int? = null,
-    ): Page<Subscription> {
-        http.validateScopes(TwitchScope.CHANNEL_READ_SUBSCRIPTIONS)
-        val params =
-            buildList {
-                add("broadcaster_id" to broadcasterId)
-                cursor?.let { add("after" to it) }
-            }
-        return http.getPage(endpoint = "subscriptions", params = params, pageSize = pageSize)
     }
 
     /**
@@ -124,39 +93,4 @@ class SubscriptionResource internal constructor(
             null
         }
     }
-
-    /**
-     * [Twitch API: Create EventSub Subscription](https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription)
-     *
-     * @param subscription the type-safe subscription definition containing type, version, and condition fields.
-     * @param sessionId the WebSocket session ID from the welcome message.
-     * @return the created EventSub subscription.
-     */
-    suspend fun createEventSub(
-        subscription: EventSubSubscriptionType,
-        sessionId: String,
-    ): EventSubSubscription {
-        val request =
-            CreateEventSubRequest(
-                type = subscription.type,
-                version = subscription.version,
-                condition = subscription.toCondition(),
-                transport = EventSubTransportRequest(sessionId = sessionId),
-            )
-        return http.post<EventSubSubscription>("eventsub/subscriptions", body = http.encodeBody(request)).requireFirst("eventsub/subscriptions")
-    }
 }
-
-@Serializable
-internal data class CreateEventSubRequest(
-    val type: String,
-    val version: String,
-    val condition: Map<String, String>,
-    val transport: EventSubTransportRequest,
-)
-
-@Serializable
-internal data class EventSubTransportRequest(
-    val method: String = "websocket",
-    @SerialName("session_id") val sessionId: String,
-)

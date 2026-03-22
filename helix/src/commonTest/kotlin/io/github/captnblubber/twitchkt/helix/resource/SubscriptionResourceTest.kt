@@ -116,7 +116,7 @@ class SubscriptionResourceTest :
             }
             """.trimIndent()
 
-        Given("listAll") {
+        Given("getAll") {
 
             When("called with a broadcaster ID") {
                 val engine =
@@ -128,7 +128,7 @@ class SubscriptionResourceTest :
                         )
                     }
                 val resource = createResource(engine)
-                val subscriptions = resource.listAll(broadcasterId = "123").toList()
+                val subscriptions = resource.getAll(broadcasterId = "123").toList()
 
                 Then("it should call the subscriptions endpoint") {
                     val request = engine.requestHistory.first()
@@ -149,117 +149,6 @@ class SubscriptionResourceTest :
                     subscriptions.size shouldBe 1
                     subscriptions.first().userId shouldBe "789"
                     subscriptions.first().userLogin shouldBe "lastsub"
-                }
-            }
-        }
-
-        Given("list") {
-
-            When("called without a cursor (first page)") {
-                val engine =
-                    MockEngine {
-                        respond(
-                            content = firstPageJson,
-                            status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
-                        )
-                    }
-                val resource = createResource(engine)
-                val page = resource.list(broadcasterId = "123")
-
-                Then("it should call the subscriptions endpoint") {
-                    val request = engine.requestHistory.first()
-                    request.url.encodedPath shouldBe "/helix/subscriptions"
-                }
-
-                Then("it should use GET method") {
-                    val request = engine.requestHistory.first()
-                    request.method shouldBe HttpMethod.Get
-                }
-
-                Then("it should pass the broadcaster_id parameter") {
-                    val request = engine.requestHistory.first()
-                    request.url.parameters["broadcaster_id"] shouldBe "123"
-                }
-
-                Then("it should not include an after cursor parameter") {
-                    val request = engine.requestHistory.first()
-                    request.url.parameters["after"].shouldBeNull()
-                }
-
-                Then("it should return the subscription data") {
-                    page.data.size shouldBe 1
-                    page.data.first().userId shouldBe "456"
-                    page.data.first().tier shouldBe "1000"
-                    page.data.first().planName shouldBe "Tier 1"
-                }
-
-                Then("it should return the next page cursor") {
-                    page.cursor.shouldNotBeNull()
-                    page.cursor shouldBe "abc123"
-                }
-            }
-
-            When("called with a cursor (subsequent page)") {
-                val engine =
-                    MockEngine {
-                        respond(
-                            content = firstPageJson,
-                            status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
-                        )
-                    }
-                val resource = createResource(engine)
-                val page = resource.list(broadcasterId = "123", cursor = "abc123")
-
-                Then("it should pass the cursor as the after parameter") {
-                    val request = engine.requestHistory.first()
-                    request.url.parameters["after"] shouldBe "abc123"
-                }
-
-                Then("it should return the cursor from the response") {
-                    page.cursor shouldBe "abc123"
-                }
-            }
-
-            When("the response has no pagination cursor (last page)") {
-                val engine =
-                    MockEngine {
-                        respond(
-                            content = lastPageJson,
-                            status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
-                        )
-                    }
-                val resource = createResource(engine)
-                val page = resource.list(broadcasterId = "123")
-
-                Then("cursor should be null") {
-                    page.cursor.shouldBeNull()
-                }
-            }
-
-            When("called with a pageSize") {
-                val engine =
-                    MockEngine {
-                        respond(
-                            content =
-                                """
-                                {
-                                    "data": [],
-                                    "pagination": {}
-                                }
-                                """.trimIndent(),
-                            status = HttpStatusCode.OK,
-                            headers = jsonHeaders,
-                        )
-                    }
-                val resource = createResource(engine)
-                resource.list(broadcasterId = "123", pageSize = 50)
-
-                Then("it should pass the pageSize as the first parameter") {
-                    val request = engine.requestHistory.first()
-                    request.url.parameters["first"] shouldBe "50"
                 }
             }
         }

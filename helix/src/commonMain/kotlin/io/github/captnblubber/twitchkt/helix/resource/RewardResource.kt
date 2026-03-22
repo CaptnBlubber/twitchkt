@@ -7,6 +7,7 @@ import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.CreateRewardRequest
 import io.github.captnblubber.twitchkt.helix.model.CustomReward
+import io.github.captnblubber.twitchkt.helix.model.RedemptionSort
 import io.github.captnblubber.twitchkt.helix.model.RedemptionStatus
 import io.github.captnblubber.twitchkt.helix.model.RewardRedemption
 import io.github.captnblubber.twitchkt.helix.model.UpdateRewardRequest
@@ -137,17 +138,17 @@ class RewardResource internal constructor(
     fun getAllRedemptions(
         broadcasterId: String,
         rewardId: String,
-        status: String? = null,
+        status: RedemptionStatus? = null,
         ids: List<String> = emptyList(),
-        sort: String? = null,
+        sort: RedemptionSort? = null,
     ): Flow<RewardRedemption> {
         val params =
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 add("reward_id" to rewardId)
-                status?.let { add("status" to it) }
+                status?.let { add("status" to it.name) }
                 ids.forEach { add("id" to it) }
-                sort?.let { add("sort" to it) }
+                sort?.let { add("sort" to it.value) }
             }
         return http
             .paginate<RewardRedemption>("channel_points/custom_rewards/redemptions", params)
@@ -172,9 +173,9 @@ class RewardResource internal constructor(
     suspend fun getRedemptions(
         broadcasterId: String,
         rewardId: String,
-        status: String? = null,
+        status: RedemptionStatus? = null,
         ids: List<String> = emptyList(),
-        sort: String? = null,
+        sort: RedemptionSort? = null,
         cursor: String? = null,
         pageSize: Int? = null,
     ): Page<RewardRedemption> {
@@ -183,9 +184,9 @@ class RewardResource internal constructor(
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 add("reward_id" to rewardId)
-                status?.let { add("status" to it) }
+                status?.let { add("status" to it.name) }
                 ids.forEach { add("id" to it) }
-                sort?.let { add("sort" to it) }
+                sort?.let { add("sort" to it.value) }
                 cursor?.let { add("after" to it) }
             }
         return http.getPage(endpoint = "channel_points/custom_rewards/redemptions", params = params, pageSize = pageSize)

@@ -155,7 +155,7 @@ val nextPage = helix.followers.list(broadcasterId = "123456", cursor = page.curs
 EventSub delivers real-time Twitch events over a managed WebSocket connection. Subscribe to the events you care about, connect, then collect from the `events` flow:
 
 ```kotlin
-val eventSub = TwitchEventSub(httpClient, config, helix.subscriptions)
+val eventSub = TwitchEventSub(httpClient, config, helix.eventSub)
 
 // Register subscriptions before connecting
 eventSub.subscribe(EventSubSubscriptionType.ChannelFollow(broadcasterId, moderatorId))

@@ -14,6 +14,7 @@ class KermitTwitchKtLogger(
     ) {
         val fullTag = "$tagPrefix/$tag"
         when (level) {
+            LogLevel.VERBOSE -> Logger.v(tag = fullTag) { message() }
             LogLevel.DEBUG -> Logger.d(tag = fullTag) { message() }
             LogLevel.INFO -> Logger.i(tag = fullTag) { message() }
             LogLevel.WARN -> Logger.w(tag = fullTag) { message() }

@@ -5,6 +5,7 @@ import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
+import io.github.captnblubber.twitchkt.helix.model.AnnouncementColor
 import io.github.captnblubber.twitchkt.helix.model.ChannelEmote
 import io.github.captnblubber.twitchkt.helix.model.ChatBadge
 import io.github.captnblubber.twitchkt.helix.model.ChatColorEntry
@@ -311,7 +312,7 @@ class ChatResource internal constructor(
         broadcasterId: String,
         moderatorId: String,
         message: String,
-        color: String = "primary",
+        color: AnnouncementColor = AnnouncementColor.PRIMARY,
         sourceOnly: Boolean? = null,
     ) {
         http.validateScopes(TwitchScope.MODERATOR_MANAGE_ANNOUNCEMENTS)
@@ -326,7 +327,7 @@ class ChatResource internal constructor(
                 http.encodeBody(
                     AnnouncementRequest(
                         message = message,
-                        color = color,
+                        color = color.value,
                         sourceOnly = sourceOnly,
                     ),
                 ),

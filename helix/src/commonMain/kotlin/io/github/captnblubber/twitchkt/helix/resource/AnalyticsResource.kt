@@ -10,6 +10,12 @@ import io.github.captnblubber.twitchkt.helix.model.ExtensionAnalyticsReport
  *
  * Provides methods for retrieving analytics reports for extensions.
  *
+ * Note: This resource returns lists directly rather than [Page]/[Flow] because when an
+ * [extensionId][getExtensionAnalytics] is specified the response contains a single report, and
+ * without one the result set is bounded by the number of extensions the user owns (typically
+ * small). The cursor is also ignored when filtering by extension ID, making auto-pagination
+ * a poor fit.
+ *
  * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-extension-analytics">Twitch API Reference - Analytics</a>
  */
 class AnalyticsResource internal constructor(

@@ -8,6 +8,11 @@ import io.github.captnblubber.twitchkt.helix.model.ExtensionTransaction
  *
  * Provides methods for retrieving extension transactions.
  *
+ * Note: This resource returns lists directly rather than [Page]/[Flow] because transactions are
+ * scoped to a specific extension and can be filtered by transaction IDs. The typical use case is
+ * fetching known transactions rather than iterating an unbounded collection, making auto-pagination
+ * unnecessary.
+ *
  * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-extension-transactions">Twitch API Reference - Extensions</a>
  */
 class ExtensionResource internal constructor(

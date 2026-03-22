@@ -11,6 +11,10 @@ import io.github.captnblubber.twitchkt.helix.model.CharityDonation
  *
  * Provides methods for retrieving charity campaign information and donations.
  *
+ * Note: This resource returns results directly rather than [Page]/[Flow] because [getCampaign]
+ * returns at most one active charity campaign, and [getDonations] is scoped to that single
+ * campaign with a small, bounded result set. Auto-pagination adds no value for these endpoints.
+ *
  * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-charity-campaign">Twitch API Reference - Charity</a>
  */
 class CharityResource internal constructor(

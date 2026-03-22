@@ -10,6 +10,14 @@ import io.github.captnblubber.twitchkt.helix.model.PollEndStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Twitch Helix Polls API resource.
+ *
+ * Note: This resource returns lists directly rather than [Page]/[Flow] because polls are scoped
+ * to a single broadcaster and optionally filtered by specific poll IDs. The result set is
+ * inherently small (only one poll can be active at a time, and historical polls are typically
+ * fetched by ID), making auto-pagination unnecessary.
+ */
 class PollResource internal constructor(
     private val http: HelixHttpClient,
 ) {

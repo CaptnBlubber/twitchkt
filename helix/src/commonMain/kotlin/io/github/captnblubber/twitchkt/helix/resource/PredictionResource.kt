@@ -9,6 +9,14 @@ import io.github.captnblubber.twitchkt.helix.model.PredictionEndStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Twitch Helix Predictions API resource.
+ *
+ * Note: This resource returns lists directly rather than [Page]/[Flow] because predictions are
+ * scoped to a single broadcaster and optionally filtered by specific prediction IDs. Only one
+ * prediction can be active at a time, so the result set is inherently small and auto-pagination
+ * is unnecessary.
+ */
 class PredictionResource internal constructor(
     private val http: HelixHttpClient,
 ) {

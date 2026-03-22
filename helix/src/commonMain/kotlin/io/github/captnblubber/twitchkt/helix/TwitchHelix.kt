@@ -9,6 +9,7 @@ import io.github.captnblubber.twitchkt.helix.resource.ChannelResource
 import io.github.captnblubber.twitchkt.helix.resource.CharityResource
 import io.github.captnblubber.twitchkt.helix.resource.ChatResource
 import io.github.captnblubber.twitchkt.helix.resource.ClipResource
+import io.github.captnblubber.twitchkt.helix.resource.EventSubResource
 import io.github.captnblubber.twitchkt.helix.resource.ExtensionResource
 import io.github.captnblubber.twitchkt.helix.resource.FollowerResource
 import io.github.captnblubber.twitchkt.helix.resource.GameResource
@@ -40,6 +41,7 @@ class TwitchHelix(
     val streams = StreamResource(http)
     val chat = ChatResource(http)
     val subscriptions = SubscriptionResource(http)
+    val eventSub = EventSubResource(http)
     val followers = FollowerResource(http)
     val polls = PollResource(http)
     val ads = AdResource(http)

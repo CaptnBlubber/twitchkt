@@ -9,6 +9,7 @@ import io.github.captnblubber.twitchkt.helix.model.Stream
 import io.github.captnblubber.twitchkt.helix.model.StreamKey
 import io.github.captnblubber.twitchkt.helix.model.StreamMarker
 import io.github.captnblubber.twitchkt.helix.model.StreamMarkerGroup
+import io.github.captnblubber.twitchkt.helix.model.StreamType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
@@ -61,7 +62,7 @@ class StreamResource internal constructor(
         userIds: List<String> = emptyList(),
         userLogins: List<String> = emptyList(),
         gameIds: List<String> = emptyList(),
-        type: String? = null,
+        type: StreamType? = null,
         language: List<String> = emptyList(),
     ): Flow<Stream> {
         val params =
@@ -69,7 +70,7 @@ class StreamResource internal constructor(
                 userIds.forEach { add("user_id" to it) }
                 userLogins.forEach { add("user_login" to it) }
                 gameIds.forEach { add("game_id" to it) }
-                type?.let { add("type" to it) }
+                type?.let { add("type" to it.value) }
                 language.forEach { add("language" to it) }
             }
         return http.paginate<Stream>("streams", params)
@@ -93,7 +94,7 @@ class StreamResource internal constructor(
         userIds: List<String> = emptyList(),
         userLogins: List<String> = emptyList(),
         gameIds: List<String> = emptyList(),
-        type: String? = null,
+        type: StreamType? = null,
         language: List<String> = emptyList(),
         cursor: String? = null,
         pageSize: Int? = null,
@@ -103,7 +104,7 @@ class StreamResource internal constructor(
                 userIds.forEach { add("user_id" to it) }
                 userLogins.forEach { add("user_login" to it) }
                 gameIds.forEach { add("game_id" to it) }
-                type?.let { add("type" to it) }
+                type?.let { add("type" to it.value) }
                 language.forEach { add("language" to it) }
                 cursor?.let { add("after" to it) }
             }

@@ -3,10 +3,10 @@ package io.github.captnblubber.twitchkt.helix.internal
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.error.TwitchApiException
+import io.github.captnblubber.twitchkt.error.mapTwitchApiError
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -30,7 +30,11 @@ internal class HelixHttpClient(
     private val config: TwitchKtConfig,
 ) {
     @PublishedApi
-    internal val json: Json = Json { encodeDefaults = true }
+    internal val json: Json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = false
+        }
 
     @PublishedApi
     internal inline fun <reified T> encodeBody(value: T): TextContent = TextContent(json.encodeToString(value), ContentType.Application.Json)
@@ -265,7 +269,7 @@ internal class HelixHttpClient(
     @PublishedApi
     internal suspend inline fun <reified T> handleResponse(response: HttpResponse): TwitchResponse<T> {
         if (response.status.value in 200..299) {
-            return response.body<TwitchResponse<T>>()
+            return json.decodeFromString<TwitchResponse<T>>(response.bodyAsText())
         }
         throw mapException(response)
     }
@@ -273,7 +277,7 @@ internal class HelixHttpClient(
     @PublishedApi
     internal suspend inline fun <reified R> handleTypedResponse(response: HttpResponse): R {
         if (response.status.value in 200..299) {
-            return response.body<R>()
+            return json.decodeFromString<R>(response.bodyAsText())
         }
         throw mapException(response)
     }
@@ -292,42 +296,15 @@ internal class HelixHttpClient(
         config.logger?.log(LogLevel.ERROR, TAG) {
             "Helix API error ${response.status.value}: $errorBody"
         }
-        return when (response.status.value) {
-            400 -> {
-                TwitchApiException.BadRequest(errorBody)
-            }
-
-            401 -> {
-                TwitchApiException.Unauthorized(errorBody)
-            }
-
-            403 -> {
-                TwitchApiException.Forbidden(errorBody)
-            }
-
-            404 -> {
-                TwitchApiException.NotFound(errorBody)
-            }
-
-            409 -> {
-                TwitchApiException.Conflict(errorBody)
-            }
-
-            422 -> {
-                TwitchApiException.UnprocessableEntity(errorBody)
-            }
-
-            429 -> {
+        val retryAfterMs =
+            if (response.status.value == 429) {
                 val resetEpoch = response.headers["Ratelimit-Reset"]?.toLongOrNull() ?: 0L
                 val nowEpoch = Clock.System.now().epochSeconds
-                val retryAfterMs = ((resetEpoch - nowEpoch) * 1000).coerceAtLeast(0L)
-                TwitchApiException.RateLimited(retryAfterMs, errorBody)
+                ((resetEpoch - nowEpoch) * 1000).coerceAtLeast(0L)
+            } else {
+                null
             }
-
-            else -> {
-                TwitchApiException.ServerError(response.status.value, errorBody)
-            }
-        }
+        return mapTwitchApiError(response.status.value, errorBody, retryAfterMs)
     }
 
     suspend fun validateScopes(vararg required: TwitchScope) {

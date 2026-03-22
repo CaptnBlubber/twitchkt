@@ -48,7 +48,7 @@ suspend fun main(): Unit = coroutineScope {
     )
 
     val helix = TwitchHelix(httpClient, config)
-    val eventSub = TwitchEventSub(httpClient, config, helix.subscriptions)
+    val eventSub = TwitchEventSub(httpClient, config, helix.eventSub)
 
     eventSub.subscribe(
         EventSubSubscriptionType.ChannelChatMessage(

@@ -5,7 +5,7 @@ import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.eventsub.internal.EventSubParser
 import io.github.captnblubber.twitchkt.eventsub.internal.ParsedMessage
 import io.github.captnblubber.twitchkt.eventsub.model.TwitchEvent
-import io.github.captnblubber.twitchkt.helix.resource.SubscriptionResource
+import io.github.captnblubber.twitchkt.helix.resource.EventSubResource
 import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocket
@@ -16,6 +16,7 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +34,7 @@ import kotlin.random.Random
 class TwitchEventSub(
     private val httpClient: HttpClient,
     private val config: TwitchKtConfig,
-    private val subscriptionResource: SubscriptionResource,
+    private val eventSubResource: EventSubResource,
 ) {
     private val parser = EventSubParser()
     private val subscriptionsMutex = Mutex()
@@ -42,7 +43,9 @@ class TwitchEventSub(
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    private val _events = MutableSharedFlow<TwitchEvent>(extraBufferCapacity = 64)
+    // DROP_OLDEST prevents slow collectors from suspending emitters. Events that
+    // exceed the buffer capacity are silently discarded (oldest first).
+    private val _events = MutableSharedFlow<TwitchEvent>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val events: SharedFlow<TwitchEvent> = _events.asSharedFlow()
 
     private val _sessionId = MutableStateFlow<String?>(null)
@@ -71,6 +74,31 @@ class TwitchEventSub(
     }
 
     /**
+     * Removes a subscription from the local subscription list.
+     *
+     * This does **not** call the Helix API to delete the subscription on the
+     * server side — callers should do that separately via [EventSubResource]
+     * if needed.
+     */
+    suspend fun unsubscribe(subscription: EventSubSubscriptionType) {
+        subscriptionsMutex.withLock {
+            subscriptions.remove(subscription)
+        }
+    }
+
+    /**
+     * Removes all subscriptions from the local subscription list.
+     *
+     * Like [unsubscribe], this only affects the local list and does not call the
+     * Helix API.
+     */
+    suspend fun clearSubscriptions() {
+        subscriptionsMutex.withLock {
+            subscriptions.clear()
+        }
+    }
+
+    /**
      * Registers a subscription to be created on the current EventSub session.
      *
      * If the WebSocket is already connected, the subscription is registered immediately.
@@ -86,7 +114,7 @@ class TwitchEventSub(
             }
         if (currentSessionId != null) {
             try {
-                subscriptionResource.createEventSub(subscription, currentSessionId)
+                eventSubResource.create(subscription, currentSessionId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -99,7 +127,7 @@ class TwitchEventSub(
         val pending = subscriptionsMutex.withLock { subscriptions.toList() }
         for (subscription in pending) {
             try {
-                subscriptionResource.createEventSub(subscription, sessionId)
+                eventSubResource.create(subscription, sessionId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -121,6 +149,12 @@ class TwitchEventSub(
                 throw e
             } catch (e: Exception) {
                 log(LogLevel.ERROR, "EventSub connection error: ${e.message}")
+            }
+
+            // If we had a successful connection (received welcome), reset the
+            // backoff counter so the next failure starts from a short delay.
+            if (_connectionState.value == ConnectionState.CONNECTED) {
+                attempt = 0
             }
 
             url = config.eventSubUrl

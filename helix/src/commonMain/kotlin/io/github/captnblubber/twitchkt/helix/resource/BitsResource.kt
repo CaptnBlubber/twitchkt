@@ -4,6 +4,7 @@ import io.github.captnblubber.twitchkt.auth.RequiresScope
 import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.BitsLeaderEntry
+import io.github.captnblubber.twitchkt.helix.model.BitsLeaderboardPeriod
 import io.github.captnblubber.twitchkt.helix.model.Cheermote
 
 /**
@@ -37,7 +38,7 @@ class BitsResource internal constructor(
     @RequiresScope(TwitchScope.BITS_READ)
     suspend fun getLeaderboard(
         count: Int = 10,
-        period: String = "all",
+        period: BitsLeaderboardPeriod = BitsLeaderboardPeriod.ALL,
         startedAt: String? = null,
         userId: String? = null,
     ): List<BitsLeaderEntry> {
@@ -47,7 +48,7 @@ class BitsResource internal constructor(
                 "bits/leaderboard",
                 buildList {
                     add("count" to count.toString())
-                    add("period" to period)
+                    add("period" to period.value)
                     startedAt?.let { add("started_at" to it) }
                     userId?.let { add("user_id" to it) }
                 },

@@ -8,6 +8,11 @@ import io.github.captnblubber.twitchkt.helix.model.Game
  *
  * Provides methods for retrieving game/category information.
  *
+ * Note: This resource returns lists directly rather than [Page]/[Flow] because [getGames] looks
+ * up specific games by ID or name (bounded to 100, no cursor pagination), and [getTopGames]
+ * supports both `before` and `after` cursors for bidirectional navigation, which does not fit the
+ * forward-only auto-pagination model.
+ *
  * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-games">Twitch API Reference - Games</a>
  */
 class GameResource internal constructor(

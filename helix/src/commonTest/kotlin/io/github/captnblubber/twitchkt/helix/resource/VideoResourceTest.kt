@@ -3,6 +3,9 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.VideoPeriod
+import io.github.captnblubber.twitchkt.helix.model.VideoSort
+import io.github.captnblubber.twitchkt.helix.model.VideoType
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -255,9 +258,9 @@ class VideoResourceTest :
                 resource.get(
                     userId = "456",
                     language = "en",
-                    period = "week",
-                    sort = "views",
-                    type = "archive",
+                    period = VideoPeriod.WEEK,
+                    sort = VideoSort.VIEWS,
+                    type = VideoType.ARCHIVE,
                 )
 
                 Then("it should pass all filter parameters") {
