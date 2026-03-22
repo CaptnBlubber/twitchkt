@@ -33,7 +33,8 @@ internal class HelixHttpClient(
     internal val json: Json =
         Json {
             ignoreUnknownKeys = true
-            encodeDefaults = false
+            encodeDefaults = true
+            explicitNulls = false
         }
 
     @PublishedApi
