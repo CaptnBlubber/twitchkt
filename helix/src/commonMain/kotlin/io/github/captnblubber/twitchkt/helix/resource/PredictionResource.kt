@@ -16,6 +16,8 @@ import kotlinx.serialization.Serializable
  * scoped to a single broadcaster and optionally filtered by specific prediction IDs. Only one
  * prediction can be active at a time, so the result set is inherently small and auto-pagination
  * is unnecessary.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-predictions">Twitch API Reference - Predictions</a>
  */
 class PredictionResource internal constructor(
     private val http: HelixHttpClient,

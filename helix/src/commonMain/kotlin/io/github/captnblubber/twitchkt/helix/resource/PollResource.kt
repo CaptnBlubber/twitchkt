@@ -17,6 +17,8 @@ import kotlinx.serialization.Serializable
  * to a single broadcaster and optionally filtered by specific poll IDs. The result set is
  * inherently small (only one poll can be active at a time, and historical polls are typically
  * fetched by ID), making auto-pagination unnecessary.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-polls">Twitch API Reference - Polls</a>
  */
 class PollResource internal constructor(
     private val http: HelixHttpClient,

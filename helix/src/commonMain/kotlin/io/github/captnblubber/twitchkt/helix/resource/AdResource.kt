@@ -10,6 +10,13 @@ import io.github.captnblubber.twitchkt.helix.model.RawAdSchedule
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Twitch Helix Ads API resource.
+ *
+ * Provides methods for starting commercials and retrieving ad schedules.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#start-commercial">Twitch API Reference - Ads</a>
+ */
 class AdResource internal constructor(
     private val http: HelixHttpClient,
 ) {

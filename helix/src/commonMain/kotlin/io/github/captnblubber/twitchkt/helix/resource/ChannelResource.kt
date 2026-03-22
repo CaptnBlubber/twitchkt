@@ -12,6 +12,13 @@ import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
 
+/**
+ * Twitch Helix Channels API resource.
+ *
+ * Provides methods for retrieving and updating channel information.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#get-channel-information">Twitch API Reference - Channels</a>
+ */
 class ChannelResource internal constructor(
     private val http: HelixHttpClient,
 ) {

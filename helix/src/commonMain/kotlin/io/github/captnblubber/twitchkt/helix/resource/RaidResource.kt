@@ -6,6 +6,13 @@ import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.RaidResponse
 
+/**
+ * Twitch Helix Raids API resource.
+ *
+ * Provides methods for starting and canceling raids.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#start-a-raid">Twitch API Reference - Raids</a>
+ */
 class RaidResource internal constructor(
     private val http: HelixHttpClient,
 ) {

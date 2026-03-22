@@ -1,0 +1,67 @@
+name: Publish Dry Run
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Validate version
+        run: |
+          VERSION=$(grep "^VERSION_NAME=" gradle.properties | cut -d= -f2)
+          echo "Publishing dry run for version $VERSION"
+
+      - name: Publish to Maven Central (dry run)
+        run: ./gradlew publishAllPublicationsToMavenCentralRepository --dry-run
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Validate changelog
+        run: |
+          VERSION=$(grep "^VERSION_NAME=" gradle.properties | cut -d= -f2)
+          python3 << 'PYEOF'
+          import sys, os
+
+          version = os.environ.get('VERSION', '')
+          if not version:
+              version = open('gradle.properties').read()
+              for line in version.splitlines():
+                  if line.startswith('VERSION_NAME='):
+                      version = line.split('=', 1)[1]
+                      break
+
+          with open('CHANGELOG.md') as f:
+              lines = f.read().splitlines()
+
+          in_section = False
+          for line in lines:
+              if line.startswith('## [Unreleased]'):
+                  continue
+              if line.startswith('## ['):
+                  expected = f'## [{version}]'
+                  if not line.startswith(expected):
+                      print(f"ERROR: Expected '{expected}' but first versioned section is '{line}'", file=sys.stderr)
+                      sys.exit(1)
+                  in_section = True
+                  break
+
+          if not in_section:
+              print(f"ERROR: No changelog section found for version {version}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"Changelog section found for {version}")
+          PYEOF

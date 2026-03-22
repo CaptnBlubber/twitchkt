@@ -21,6 +21,14 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Twitch Helix Moderation API resource.
+ *
+ * Provides methods for managing bans, blocked terms, AutoMod settings, moderators, VIPs,
+ * shield mode, and suspicious users.
+ *
+ * @see <a href="https://dev.twitch.tv/docs/api/reference/#check-automod-status">Twitch API Reference - Moderation</a>
+ */
 class ModerationResource internal constructor(
     private val http: HelixHttpClient,
 ) {
