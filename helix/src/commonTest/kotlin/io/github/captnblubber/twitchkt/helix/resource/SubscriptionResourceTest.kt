@@ -237,4 +237,84 @@ class SubscriptionResourceTest :
                 }
             }
         }
+
+        Given("checkUserSubscription") {
+
+            When("the user is subscribed") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "broadcaster_id": "123",
+                                            "broadcaster_login": "streamer",
+                                            "broadcaster_name": "Streamer",
+                                            "gifter_id": "",
+                                            "gifter_login": "",
+                                            "gifter_name": "",
+                                            "is_gift": false,
+                                            "plan_name": "Tier 1",
+                                            "tier": "1000",
+                                            "user_id": "456",
+                                            "user_login": "subscriber",
+                                            "user_name": "Subscriber"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val subscription = resource.checkUserSubscription(broadcasterId = "123", userId = "456")
+
+                Then("it should call the subscriptions/user endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/subscriptions/user"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "456"
+                }
+
+                Then("it should return the subscription") {
+                    subscription.shouldNotBeNull()
+                    subscription.userId shouldBe "456"
+                    subscription.tier shouldBe "1000"
+                }
+            }
+
+            When("the user is not subscribed (404)") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Not Found","message":"user not found"}""",
+                            status = HttpStatusCode.NotFound,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val subscription = resource.checkUserSubscription(broadcasterId = "123", userId = "456")
+
+                Then("it should return null") {
+                    subscription.shouldBeNull()
+                }
+            }
+        }
     })

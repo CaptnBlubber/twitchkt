@@ -192,6 +192,60 @@ class ChannelResourceTest :
             }
         }
 
+        Given("getEditors") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "user_id": "editor-1",
+                                            "user_name": "Editor One",
+                                            "created_at": "2024-01-01T00:00:00Z"
+                                        },
+                                        {
+                                            "user_id": "editor-2",
+                                            "user_name": "Editor Two",
+                                            "created_at": "2024-02-01T00:00:00Z"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val editors = resource.getEditors(broadcasterId = "456")
+
+                Then("it should call the channels/editors endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/channels/editors"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                }
+
+                Then("it should deserialize the editors") {
+                    editors.size shouldBe 2
+                    editors.first().userId shouldBe "editor-1"
+                    editors.first().userName shouldBe "Editor One"
+                    editors.last().userId shouldBe "editor-2"
+                }
+            }
+        }
+
         val followedChannelJson =
             """
             {

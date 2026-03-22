@@ -32,6 +32,12 @@ kover {
                 classes("io.github.captnblubber.twitchkt.irc.TwitchIrc*")
                 // IRC message sealed hierarchy
                 classes("io.github.captnblubber.twitchkt.irc.IrcMessage*")
+                // Internal request/response DTOs inside resource files — @Serializable data containers
+                classes(
+                    "io.github.captnblubber.twitchkt.helix.resource.*Request*",
+                    "io.github.captnblubber.twitchkt.helix.resource.*Response*",
+                    "io.github.captnblubber.twitchkt.helix.resource.BanUserData*",
+                )
             }
         }
     }

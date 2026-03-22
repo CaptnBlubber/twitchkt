@@ -312,6 +312,259 @@ class UserResourceTest :
             }
         }
 
+        Given("updateUser") {
+
+            When("called with a description") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "123",
+                                            "login": "testuser",
+                                            "display_name": "TestUser",
+                                            "type": "",
+                                            "broadcaster_type": "affiliate",
+                                            "description": "new desc",
+                                            "profile_image_url": "https://example.com/img.png",
+                                            "offline_image_url": "",
+                                            "created_at": "2020-01-01T00:00:00Z"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val user = resource.updateUser(description = "new desc")
+
+                Then("it should call the users endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users"
+                }
+
+                Then("it should use PUT method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Put
+                }
+
+                Then("it should pass the description parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["description"] shouldBe "new desc"
+                }
+
+                Then("it should deserialize the updated user") {
+                    user.id shouldBe "123"
+                    user.description shouldBe "new desc"
+                }
+            }
+        }
+
+        Given("blockUser") {
+
+            When("called with a target user ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.blockUser(targetUserId = "456")
+
+                Then("it should call the users/blocks endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/blocks"
+                }
+
+                Then("it should use PUT method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Put
+                }
+
+                Then("it should pass the target_user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["target_user_id"] shouldBe "456"
+                }
+            }
+
+            When("called with source context and reason") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.blockUser(
+                    targetUserId = "456",
+                    sourceContext = io.github.captnblubber.twitchkt.helix.model.BlockSourceContext.CHAT,
+                    reason = io.github.captnblubber.twitchkt.helix.model.BlockReason.SPAM,
+                )
+
+                Then("it should pass the source_context parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["source_context"] shouldBe "chat"
+                }
+
+                Then("it should pass the reason parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["reason"] shouldBe "spam"
+                }
+            }
+        }
+
+        Given("unblockUser") {
+
+            When("called with a target user ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.unblockUser(targetUserId = "456")
+
+                Then("it should call the users/blocks endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/blocks"
+                }
+
+                Then("it should use DELETE method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Delete
+                }
+
+                Then("it should pass the target_user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["target_user_id"] shouldBe "456"
+                }
+            }
+        }
+
+        Given("getExtensions") {
+
+            When("called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "ext-1",
+                                            "version": "1.0",
+                                            "name": "My Extension",
+                                            "can_activate": true,
+                                            "type": ["panel"]
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val extensions = resource.getExtensions()
+
+                Then("it should call the users/extensions/list endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/extensions/list"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should deserialize the extensions") {
+                    extensions shouldHaveSize 1
+                    extensions.first().id shouldBe "ext-1"
+                    extensions.first().name shouldBe "My Extension"
+                    extensions.first().canActivate shouldBe true
+                }
+            }
+        }
+
+        Given("getActiveExtensions") {
+
+            val activeExtensionsJson =
+                """
+                {
+                    "data": {
+                        "panel": {
+                            "1": {
+                                "active": true,
+                                "id": "ext-1",
+                                "version": "1.0",
+                                "name": "Panel Ext"
+                            }
+                        },
+                        "overlay": {},
+                        "component": {}
+                    }
+                }
+                """.trimIndent()
+
+            When("called without a userId") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = activeExtensionsJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val activeExts = resource.getActiveExtensions()
+
+                Then("it should call the users/extensions endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/extensions"
+                }
+
+                Then("it should not include a user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"].shouldBeNull()
+                }
+
+                Then("it should deserialize the active extensions") {
+                    activeExts.panel.size shouldBe 1
+                    activeExts.panel["1"]?.active shouldBe true
+                    activeExts.panel["1"]?.name shouldBe "Panel Ext"
+                }
+            }
+
+            When("called with a userId") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = activeExtensionsJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getActiveExtensions(userId = "123")
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "123"
+                }
+            }
+        }
+
         Given("getUsers error paths") {
 
             When("the API returns 401 Unauthorized") {

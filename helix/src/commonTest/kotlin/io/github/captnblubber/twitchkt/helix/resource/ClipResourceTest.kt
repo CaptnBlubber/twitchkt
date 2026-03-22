@@ -19,6 +19,204 @@ class ClipResourceTest :
 
         fun createResource(engine: MockEngine) = ClipResource(createHelixClient(engine))
 
+        Given("create") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "CreatedClip123",
+                                            "edit_url": "https://clips.twitch.tv/CreatedClip123/edit"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val clip = resource.create(broadcasterId = "456")
+
+                Then("it should call the clips endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/clips"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                }
+
+                Then("it should not include optional parameters when not provided") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["title"] shouldBe null
+                    request.url.parameters["duration"] shouldBe null
+                }
+
+                Then("it should deserialize the created clip") {
+                    clip.id shouldBe "CreatedClip123"
+                    clip.editUrl shouldBe "https://clips.twitch.tv/CreatedClip123/edit"
+                }
+            }
+
+            When("called with title and duration") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "CreatedClip456",
+                                            "edit_url": "https://clips.twitch.tv/CreatedClip456/edit"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.create(broadcasterId = "456", title = "Cool Moment", duration = 45.0)
+
+                Then("it should pass the title parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["title"] shouldBe "Cool Moment"
+                }
+
+                Then("it should pass the duration parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["duration"] shouldBe "45.0"
+                }
+            }
+        }
+
+        Given("createFromVod") {
+
+            When("called with required parameters") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "VodClip789",
+                                            "edit_url": "https://clips.twitch.tv/VodClip789/edit"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val clip =
+                    resource.createFromVod(
+                        editorId = "editor1",
+                        broadcasterId = "456",
+                        vodId = "vod-123",
+                        vodOffset = 3600,
+                        title = "VOD Highlight",
+                    )
+
+                Then("it should call the videos/clips endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/videos/clips"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should pass the editor_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["editor_id"] shouldBe "editor1"
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                }
+
+                Then("it should pass the vod_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["vod_id"] shouldBe "vod-123"
+                }
+
+                Then("it should pass the vod_offset parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["vod_offset"] shouldBe "3600"
+                }
+
+                Then("it should pass the title parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["title"] shouldBe "VOD Highlight"
+                }
+
+                Then("it should not include duration when not provided") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["duration"] shouldBe null
+                }
+
+                Then("it should deserialize the created clip") {
+                    clip.id shouldBe "VodClip789"
+                    clip.editUrl shouldBe "https://clips.twitch.tv/VodClip789/edit"
+                }
+            }
+
+            When("called with optional duration") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "VodClip999",
+                                            "edit_url": "https://clips.twitch.tv/VodClip999/edit"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.createFromVod(
+                    editorId = "editor1",
+                    broadcasterId = "456",
+                    vodId = "vod-123",
+                    vodOffset = 3600,
+                    title = "VOD Highlight",
+                    duration = 15.5,
+                )
+
+                Then("it should pass the duration parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["duration"] shouldBe "15.5"
+                }
+            }
+        }
+
         Given("get") {
 
             When("called with a broadcaster ID") {

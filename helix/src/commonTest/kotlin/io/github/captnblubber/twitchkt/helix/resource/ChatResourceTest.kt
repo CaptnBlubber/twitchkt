@@ -495,6 +495,681 @@ class ChatResourceTest :
             }
         }
 
+        Given("sendMessage") {
+
+            When("called with a valid request") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "message_id": "msg-123",
+                                            "is_sent": true
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val response =
+                    resource.sendMessage(
+                        SendChatMessageRequest(
+                            broadcasterId = "123",
+                            senderId = "456",
+                            message = "Hello World",
+                        ),
+                    )
+
+                Then("it should call the chat/messages endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/messages"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+
+                Then("it should deserialize the response") {
+                    response.messageId shouldBe "msg-123"
+                    response.isSent shouldBe true
+                    response.dropReason shouldBe null
+                }
+            }
+        }
+
+        Given("getGlobalBadges") {
+
+            When("called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "set_id": "vip",
+                                            "versions": [
+                                                {
+                                                    "id": "1",
+                                                    "image_url_1x": "https://example.com/1x.png",
+                                                    "image_url_2x": "https://example.com/2x.png",
+                                                    "image_url_4x": "https://example.com/4x.png",
+                                                    "title": "VIP",
+                                                    "description": "VIP badge"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val badges = resource.getGlobalBadges()
+
+                Then("it should call the chat/badges/global endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/badges/global"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should deserialize the badges") {
+                    badges.size shouldBe 1
+                    badges.first().setId shouldBe "vip"
+                    badges.first().versions.size shouldBe 1
+                    badges
+                        .first()
+                        .versions
+                        .first()
+                        .id shouldBe "1"
+                    badges
+                        .first()
+                        .versions
+                        .first()
+                        .title shouldBe "VIP"
+                }
+            }
+        }
+
+        Given("getChannelBadges") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "set_id": "subscriber",
+                                            "versions": [
+                                                {
+                                                    "id": "0",
+                                                    "image_url_1x": "https://example.com/sub1x.png",
+                                                    "image_url_2x": "https://example.com/sub2x.png",
+                                                    "image_url_4x": "https://example.com/sub4x.png"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val badges = resource.getChannelBadges(broadcasterId = "123")
+
+                Then("it should call the chat/badges endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/badges"
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the badges") {
+                    badges.size shouldBe 1
+                    badges.first().setId shouldBe "subscriber"
+                }
+            }
+        }
+
+        Given("getChannelEmotes") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "emote-1",
+                                            "name": "streamerHype",
+                                            "images": {
+                                                "url_1x": "https://example.com/1x.png",
+                                                "url_2x": "https://example.com/2x.png",
+                                                "url_4x": "https://example.com/4x.png"
+                                            },
+                                            "tier": "1000",
+                                            "emote_type": "subscriptions",
+                                            "emote_set_id": "100",
+                                            "format": ["static"],
+                                            "scale": ["1.0", "2.0"],
+                                            "theme_mode": ["dark", "light"]
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val emotes = resource.getChannelEmotes(broadcasterId = "123")
+
+                Then("it should call the chat/emotes endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/emotes"
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the emotes") {
+                    emotes.size shouldBe 1
+                    emotes.first().id shouldBe "emote-1"
+                    emotes.first().name shouldBe "streamerHype"
+                    emotes.first().tier shouldBe "1000"
+                    emotes.first().emoteType shouldBe "subscriptions"
+                }
+            }
+        }
+
+        Given("getGlobalEmotes") {
+
+            When("called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "global-1",
+                                            "name": "Kappa",
+                                            "images": {
+                                                "url_1x": "https://example.com/kappa1x.png",
+                                                "url_2x": "https://example.com/kappa2x.png",
+                                                "url_4x": "https://example.com/kappa4x.png"
+                                            },
+                                            "format": ["static", "animated"],
+                                            "scale": ["1.0", "2.0", "3.0"],
+                                            "theme_mode": ["dark", "light"]
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val emotes = resource.getGlobalEmotes()
+
+                Then("it should call the chat/emotes/global endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/emotes/global"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should deserialize the emotes") {
+                    emotes.size shouldBe 1
+                    emotes.first().id shouldBe "global-1"
+                    emotes.first().name shouldBe "Kappa"
+                }
+            }
+        }
+
+        Given("getEmoteSets") {
+
+            When("called with emote set IDs") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "emote-set-1",
+                                            "name": "SetEmote",
+                                            "images": {
+                                                "url_1x": "https://example.com/set1x.png",
+                                                "url_2x": "https://example.com/set2x.png",
+                                                "url_4x": "https://example.com/set4x.png"
+                                            },
+                                            "emote_set_id": "300",
+                                            "owner_id": "789"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val emotes = resource.getEmoteSets(emoteSetIds = listOf("300", "301"))
+
+                Then("it should call the chat/emotes/set endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/emotes/set"
+                }
+
+                Then("it should pass multiple emote_set_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("emote_set_id") shouldBe listOf("300", "301")
+                }
+
+                Then("it should deserialize the emotes") {
+                    emotes.size shouldBe 1
+                    emotes.first().id shouldBe "emote-set-1"
+                    emotes.first().emoteSetId shouldBe "300"
+                    emotes.first().ownerId shouldBe "789"
+                }
+            }
+        }
+
+        Given("getSettings") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "broadcaster_id": "123",
+                                            "slow_mode": false,
+                                            "slow_mode_wait_time": null,
+                                            "follower_mode": true,
+                                            "follower_mode_duration": 10,
+                                            "subscriber_mode": false,
+                                            "emote_mode": false,
+                                            "unique_chat_mode": false
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val settings = resource.getSettings(broadcasterId = "123")
+
+                Then("it should call the chat/settings endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/settings"
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should not include moderator_id when not provided") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["moderator_id"].shouldBeNull()
+                }
+
+                Then("it should deserialize the settings") {
+                    settings.broadcasterId shouldBe "123"
+                    settings.slowMode shouldBe false
+                    settings.followerMode shouldBe true
+                    settings.followerModeDuration shouldBe 10
+                    settings.subscriberMode shouldBe false
+                    settings.emoteMode shouldBe false
+                    settings.uniqueChatMode shouldBe false
+                }
+            }
+
+            When("called with a moderator ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "broadcaster_id": "123",
+                                            "slow_mode": false,
+                                            "follower_mode": false,
+                                            "subscriber_mode": false,
+                                            "emote_mode": false,
+                                            "unique_chat_mode": false,
+                                            "non_moderator_chat_delay": true,
+                                            "non_moderator_chat_delay_duration": 4,
+                                            "moderator_id": "456"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val settings = resource.getSettings(broadcasterId = "123", moderatorId = "456")
+
+                Then("it should pass the moderator_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["moderator_id"] shouldBe "456"
+                }
+
+                Then("it should deserialize moderator-only fields") {
+                    settings.nonModeratorChatDelay shouldBe true
+                    settings.nonModeratorChatDelayDuration shouldBe 4
+                    settings.moderatorId shouldBe "456"
+                }
+            }
+        }
+
+        Given("updateSettings") {
+
+            When("called with settings to update") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "broadcaster_id": "123",
+                                            "slow_mode": true,
+                                            "slow_mode_wait_time": 10,
+                                            "follower_mode": false,
+                                            "subscriber_mode": false,
+                                            "emote_mode": false,
+                                            "unique_chat_mode": false
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val settings =
+                    resource.updateSettings(
+                        broadcasterId = "123",
+                        moderatorId = "456",
+                        slowMode = true,
+                        slowModeWaitTime = 10,
+                    )
+
+                Then("it should call the chat/settings endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/settings"
+                }
+
+                Then("it should use PATCH method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Patch
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should pass the moderator_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["moderator_id"] shouldBe "456"
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+
+                Then("it should deserialize the updated settings") {
+                    settings.broadcasterId shouldBe "123"
+                    settings.slowMode shouldBe true
+                    settings.slowModeWaitTime shouldBe 10
+                }
+            }
+        }
+
+        Given("sendAnnouncement") {
+
+            When("called with required parameters") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.sendAnnouncement(
+                    broadcasterId = "123",
+                    moderatorId = "456",
+                    message = "Big news!",
+                )
+
+                Then("it should call the chat/announcements endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/announcements"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should pass the moderator_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["moderator_id"] shouldBe "456"
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+            }
+        }
+
+        Given("getUserColor") {
+
+            When("called with user IDs") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "user_id": "123",
+                                            "user_login": "user1",
+                                            "user_name": "User1",
+                                            "color": "#9146FF"
+                                        },
+                                        {
+                                            "user_id": "456",
+                                            "user_login": "user2",
+                                            "user_name": "User2",
+                                            "color": ""
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val colors = resource.getUserColor(userIds = listOf("123", "456"))
+
+                Then("it should call the chat/color endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/color"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass multiple user_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("user_id") shouldBe listOf("123", "456")
+                }
+
+                Then("it should deserialize the color entries") {
+                    colors.size shouldBe 2
+                    colors[0].userId shouldBe "123"
+                    colors[0].color shouldBe "#9146FF"
+                    colors[1].userId shouldBe "456"
+                    colors[1].color shouldBe ""
+                }
+            }
+        }
+
+        Given("updateUserColor") {
+
+            When("called with user ID and color") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.updateUserColor(userId = "123", color = "blue")
+
+                Then("it should call the chat/color endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/chat/color"
+                }
+
+                Then("it should use PUT method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Put
+                }
+
+                Then("it should pass the user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "123"
+                }
+
+                Then("it should pass the color parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["color"] shouldBe "blue"
+                }
+            }
+        }
+
+        Given("getSharedChatSession") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "session_id": "session-1",
+                                            "host_broadcaster_id": "123",
+                                            "participants": [
+                                                {"broadcaster_id": "123"},
+                                                {"broadcaster_id": "456"}
+                                            ],
+                                            "created_at": "2024-01-01T00:00:00Z",
+                                            "updated_at": "2024-01-01T01:00:00Z"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val session = resource.getSharedChatSession(broadcasterId = "123")
+
+                Then("it should call the shared_chat/session endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/shared_chat/session"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the session") {
+                    session.sessionId shouldBe "session-1"
+                    session.hostBroadcasterId shouldBe "123"
+                    session.participants.size shouldBe 2
+                    session.participants[0].broadcasterId shouldBe "123"
+                    session.participants[1].broadcasterId shouldBe "456"
+                }
+            }
+        }
+
         Given("getAllChatters error paths") {
 
             When("the API returns 429 Rate Limited") {

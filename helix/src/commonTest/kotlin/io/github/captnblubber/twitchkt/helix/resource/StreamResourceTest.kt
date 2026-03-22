@@ -469,4 +469,101 @@ class StreamResourceTest :
                 }
             }
         }
+
+        Given("StreamKey") {
+
+            val streamKeyJson =
+                """
+                {
+                    "data": [
+                        {
+                            "stream_key": "live_123456789_abcdefghijklmnop"
+                        }
+                    ]
+                }
+                """.trimIndent()
+
+            When("getStreamKey is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = streamKeyJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val streamKey = resource.getStreamKey(broadcasterId = "123")
+
+                Then("it should call the streams/key endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/streams/key"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should deserialize the stream key") {
+                    streamKey.streamKey shouldBe "live_123456789_abcdefghijklmnop"
+                }
+            }
+        }
+
+        Given("CreateStreamMarker") {
+
+            val createdMarkerJson =
+                """
+                {
+                    "data": [
+                        {
+                            "id": "marker-1",
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "position_seconds": 300,
+                            "description": "highlight"
+                        }
+                    ]
+                }
+                """.trimIndent()
+
+            When("createStreamMarker is called") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = createdMarkerJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val marker = resource.createStreamMarker(userId = "123", description = "highlight")
+
+                Then("it should call the streams/markers endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/streams/markers"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+
+                Then("it should deserialize the created marker") {
+                    marker.id shouldBe "marker-1"
+                    marker.positionSeconds shouldBe 300
+                    marker.description shouldBe "highlight"
+                }
+            }
+        }
     })
