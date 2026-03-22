@@ -28,7 +28,7 @@ class TwitchEventSubTest :
 
         fun createEventSub(httpClient: HttpClient): TwitchEventSub {
             val helix = TwitchHelix(httpClient, testConfig)
-            return TwitchEventSub(httpClient, testConfig, helix.subscriptions)
+            return TwitchEventSub(httpClient, testConfig, helix.eventSub)
         }
 
         Given("ConnectionState enum") {

@@ -5,10 +5,10 @@ EventSub WebSocket client for Twitch. Manages a single WebSocket connection with
 ## Setup
 
 ```kotlin
-val eventSub = TwitchEventSub(httpClient, config, helix.subscriptions)
+val eventSub = TwitchEventSub(httpClient, config, helix.eventSub)
 ```
 
-Requires a `TwitchHelix` instance for subscription management (uses `helix.subscriptions` to register EventSub subscriptions via the Helix API).
+Requires a `TwitchHelix` instance for subscription management (uses `helix.eventSub` to register EventSub subscriptions via the Helix API).
 
 ## Usage
 
@@ -41,7 +41,7 @@ eventSub.events.collect { event ->
 
 Subscriptions registered before `connect()` are created when the welcome message arrives. Subscriptions added after connection are registered immediately. On error-recovery reconnects, all subscriptions are re-registered. Server-initiated reconnects carry subscriptions over without re-registration.
 
-The `sessionId` StateFlow remains public for advanced use cases requiring manual subscription management via `helix.subscriptions.createEventSub()`.
+The `sessionId` StateFlow remains public for advanced use cases requiring manual subscription management via `helix.eventSub.create()`.
 
 ### Disconnect
 

@@ -5,6 +5,9 @@ import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.Video
+import io.github.captnblubber.twitchkt.helix.model.VideoPeriod
+import io.github.captnblubber.twitchkt.helix.model.VideoSort
+import io.github.captnblubber.twitchkt.helix.model.VideoType
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -37,9 +40,9 @@ class VideoResource internal constructor(
         userId: String? = null,
         gameId: String? = null,
         language: String? = null,
-        period: String? = null,
-        sort: String? = null,
-        type: String? = null,
+        period: VideoPeriod? = null,
+        sort: VideoSort? = null,
+        type: VideoType? = null,
     ): Flow<Video> {
         val params =
             buildList {
@@ -47,9 +50,9 @@ class VideoResource internal constructor(
                 userId?.let { add("user_id" to it) }
                 gameId?.let { add("game_id" to it) }
                 language?.let { add("language" to it) }
-                period?.let { add("period" to it) }
-                sort?.let { add("sort" to it) }
-                type?.let { add("type" to it) }
+                period?.let { add("period" to it.value) }
+                sort?.let { add("sort" to it.value) }
+                type?.let { add("type" to it.value) }
             }
         return http.paginate<Video>("videos", params)
     }
@@ -75,9 +78,9 @@ class VideoResource internal constructor(
         userId: String? = null,
         gameId: String? = null,
         language: String? = null,
-        period: String? = null,
-        sort: String? = null,
-        type: String? = null,
+        period: VideoPeriod? = null,
+        sort: VideoSort? = null,
+        type: VideoType? = null,
         cursor: String? = null,
         pageSize: Int? = null,
     ): Page<Video> {
@@ -87,9 +90,9 @@ class VideoResource internal constructor(
                 userId?.let { add("user_id" to it) }
                 gameId?.let { add("game_id" to it) }
                 language?.let { add("language" to it) }
-                period?.let { add("period" to it) }
-                sort?.let { add("sort" to it) }
-                type?.let { add("type" to it) }
+                period?.let { add("period" to it.value) }
+                sort?.let { add("sort" to it.value) }
+                type?.let { add("type" to it.value) }
                 cursor?.let { add("after" to it) }
             }
         return http.getPage(endpoint = "videos", params = params, pageSize = pageSize)

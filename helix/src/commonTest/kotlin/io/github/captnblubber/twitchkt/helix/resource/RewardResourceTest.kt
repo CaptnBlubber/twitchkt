@@ -3,6 +3,8 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.RedemptionSort
+import io.github.captnblubber.twitchkt.helix.model.RedemptionStatus
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -141,7 +143,7 @@ class RewardResourceTest :
                         .getAllRedemptions(
                             broadcasterId = "123",
                             rewardId = "reward-1",
-                            status = "FULFILLED",
+                            status = RedemptionStatus.FULFILLED,
                         ).toList()
 
                 Then("it should call the channel_points/custom_rewards/redemptions endpoint") {
@@ -186,7 +188,7 @@ class RewardResourceTest :
                     resource.getRedemptions(
                         broadcasterId = "123",
                         rewardId = "reward-1",
-                        status = "UNFULFILLED",
+                        status = RedemptionStatus.UNFULFILLED,
                     )
 
                 Then("it should not include an after cursor parameter") {
@@ -295,7 +297,7 @@ class RewardResourceTest :
                 resource.getRedemptions(
                     broadcasterId = "123",
                     rewardId = "reward-1",
-                    sort = "NEWEST",
+                    sort = RedemptionSort.NEWEST,
                 )
 
                 Then("it should pass the sort parameter") {

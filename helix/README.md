@@ -81,12 +81,12 @@ val count = helix.followers.getTotal(broadcasterId = "123456")
 
 ```kotlin
 // Auto-paginate all subscriptions
-helix.subscriptions.listAll(broadcasterId = "123456").collect { sub ->
+helix.subscriptions.getAll(broadcasterId = "123456").collect { sub ->
     println("${sub.userLogin} — tier ${sub.tier}")
 }
 
 // Or fetch a single page
-val page = helix.subscriptions.list(broadcasterId = "123456", pageSize = 50)
+val page = helix.subscriptions.get(broadcasterId = "123456", pageSize = 50)
 ```
 
 ### Polls
@@ -154,7 +154,8 @@ val page = helix.search.categories(query = "Minecraft", pageSize = 5)
 | `helix.streams` | Streams | `getStreams` / `getAllStreams` (Flow), `getFollowedStreams` / `getAllFollowedStreams` (Flow), `getStreamMarkers` / `getAllStreamMarkers` (Flow) | Varies per method |
 | `helix.chat` | Chat | `sendMessage`, `getChatters` / `getAllChatters` (Flow), `getUserEmotes` / `getAllUserEmotes` (Flow), `getChannelEmotes`, `getGlobalEmotes`, `getEmoteSets`, `getSettings`, `updateSettings`, `sendAnnouncement`, `getUserColor`, `updateUserColor`, `getGlobalBadges`, `getChannelBadges` | Varies per method |
 | `helix.followers` | Followers | `list` / `listAll` (Flow), `getTotal` | `moderator:read:followers` |
-| `helix.subscriptions` | Subscriptions | `list` / `listAll` (Flow), `get`, `createEventSub` | `channel:read:subscriptions` (list) |
+| `helix.subscriptions` | Subscriptions | `get`, `getAll` (Flow), `checkUserSubscription` | `channel:read:subscriptions` / `user:read:subscriptions` |
+| `helix.eventSub` | EventSub | `create` | — |
 | `helix.polls` | Polls | `create`, `end` | `channel:manage:polls` |
 | `helix.predictions` | Predictions | `list`, `create`, `end` | `channel:manage:predictions` |
 | `helix.ads` | Ads | `getSchedule`, `startCommercial`, `snoozeNextAd` | `channel:read:ads` / `channel:manage:ads` |

@@ -6,6 +6,8 @@ import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
 import io.github.captnblubber.twitchkt.helix.model.ActiveExtensions
+import io.github.captnblubber.twitchkt.helix.model.BlockReason
+import io.github.captnblubber.twitchkt.helix.model.BlockSourceContext
 import io.github.captnblubber.twitchkt.helix.model.BlockedUser
 import io.github.captnblubber.twitchkt.helix.model.User
 import io.github.captnblubber.twitchkt.helix.model.UserExtension
@@ -136,15 +138,15 @@ class UserResource internal constructor(
     @RequiresScope(TwitchScope.USER_MANAGE_BLOCKED_USERS)
     suspend fun blockUser(
         targetUserId: String,
-        sourceContext: String? = null,
-        reason: String? = null,
+        sourceContext: BlockSourceContext? = null,
+        reason: BlockReason? = null,
     ) {
         http.validateScopes(TwitchScope.USER_MANAGE_BLOCKED_USERS)
         val params =
             buildList {
                 add("target_user_id" to targetUserId)
-                sourceContext?.let { add("source_context" to it) }
-                reason?.let { add("reason" to it) }
+                sourceContext?.let { add("source_context" to it.value) }
+                reason?.let { add("reason" to it.value) }
             }
         http.putNoContent("users/blocks", params = params)
     }

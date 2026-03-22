@@ -3,6 +3,7 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.StreamType
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -224,7 +225,7 @@ class StreamResourceTest :
                 resource.getStreams(
                     userIds = listOf("456"),
                     gameIds = listOf("509658"),
-                    type = "live",
+                    type = StreamType.LIVE,
                 )
 
                 Then("it should pass filter parameters") {

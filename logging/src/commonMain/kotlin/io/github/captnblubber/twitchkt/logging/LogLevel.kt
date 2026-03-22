@@ -1,3 +1,3 @@
 package io.github.captnblubber.twitchkt.logging
 
-enum class LogLevel { DEBUG, INFO, WARN, ERROR }
+enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR }

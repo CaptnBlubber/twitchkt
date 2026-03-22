@@ -3,6 +3,7 @@ package io.github.captnblubber.twitchkt.helix.resource
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.UnbanRequestStatus
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -464,7 +465,7 @@ class ModerationResourceTest :
                 resource.getUnbanRequests(
                     broadcasterId = "123",
                     moderatorId = "100",
-                    status = "approved",
+                    status = UnbanRequestStatus.APPROVED,
                 )
 
                 Then("it should pass the status parameter") {

@@ -4,6 +4,7 @@ package io.github.captnblubber.twitchkt.irc
 
 import io.github.captnblubber.twitchkt.ConnectionState
 import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.github.captnblubber.twitchkt.irc.internal.IrcParser
 import io.github.captnblubber.twitchkt.logging.LogLevel
 import io.ktor.client.HttpClient
@@ -15,6 +16,7 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +65,7 @@ class TwitchIrc(
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    private val _messages = MutableSharedFlow<IrcMessage>(extraBufferCapacity = 64)
+    private val _messages = MutableSharedFlow<IrcMessage>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val messages: SharedFlow<IrcMessage> = _messages.asSharedFlow()
 
     private val connectionMutex = Mutex()
@@ -135,6 +137,10 @@ class TwitchIrc(
                 runWebSocketSession()
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: TwitchApiException.Unauthorized) {
+                log(LogLevel.ERROR, "Authentication failed, not reconnecting: ${e.message}")
+                _connectionState.value = ConnectionState.DISCONNECTED
+                throw e
             } catch (e: Exception) {
                 log(LogLevel.ERROR, "IRC connection error: ${e.message}")
             }
@@ -194,6 +200,11 @@ class TwitchIrc(
 
             for (line in text.lines()) {
                 if (line.isBlank()) continue
+
+                if (line.contains("NOTICE") && line.contains("Login authentication failed")) {
+                    log(LogLevel.ERROR, "IRC authentication failed — check your token")
+                    throw TwitchApiException.Unauthorized("IRC login authentication failed")
+                }
 
                 if (line.startsWith("PING")) {
                     sendCommand(session, "PONG :tmi.twitch.tv")

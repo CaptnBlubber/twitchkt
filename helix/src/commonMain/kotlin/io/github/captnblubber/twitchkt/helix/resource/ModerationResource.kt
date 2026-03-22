@@ -5,6 +5,7 @@ import io.github.captnblubber.twitchkt.auth.TwitchScope
 import io.github.captnblubber.twitchkt.helix.Page
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.internal.requireFirst
+import io.github.captnblubber.twitchkt.helix.model.AutoModAction
 import io.github.captnblubber.twitchkt.helix.model.AutoModCheckResult
 import io.github.captnblubber.twitchkt.helix.model.AutoModSettings
 import io.github.captnblubber.twitchkt.helix.model.BannedUser
@@ -14,6 +15,7 @@ import io.github.captnblubber.twitchkt.helix.model.ModeratedChannel
 import io.github.captnblubber.twitchkt.helix.model.ShieldModeStatus
 import io.github.captnblubber.twitchkt.helix.model.SuspiciousUserStatus
 import io.github.captnblubber.twitchkt.helix.model.UnbanRequestResponse
+import io.github.captnblubber.twitchkt.helix.model.UnbanRequestStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
@@ -58,7 +60,7 @@ class ModerationResource internal constructor(
     suspend fun manageHeldAutoModMessage(
         userId: String,
         msgId: String,
-        action: String,
+        action: AutoModAction,
     ) {
         http.validateScopes(TwitchScope.MODERATOR_MANAGE_AUTOMOD)
         http.postNoContent(
@@ -68,7 +70,7 @@ class ModerationResource internal constructor(
                     ManageAutoModMessageRequest(
                         userId = userId,
                         msgId = msgId,
-                        action = action,
+                        action = action.value,
                     ),
                 ),
         )
@@ -264,13 +266,13 @@ class ModerationResource internal constructor(
     fun getAllUnbanRequests(
         broadcasterId: String,
         moderatorId: String,
-        status: String = "pending",
+        status: UnbanRequestStatus = UnbanRequestStatus.PENDING,
     ): Flow<UnbanRequestResponse> {
         val params =
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 add("moderator_id" to moderatorId)
-                add("status" to status)
+                add("status" to status.value)
             }
         return http
             .paginate<UnbanRequestResponse>("moderation/unban_requests", params)
@@ -294,7 +296,7 @@ class ModerationResource internal constructor(
     suspend fun getUnbanRequests(
         broadcasterId: String,
         moderatorId: String,
-        status: String = "pending",
+        status: UnbanRequestStatus = UnbanRequestStatus.PENDING,
         userId: String? = null,
         cursor: String? = null,
         pageSize: Int? = null,
@@ -304,7 +306,7 @@ class ModerationResource internal constructor(
             buildList {
                 add("broadcaster_id" to broadcasterId)
                 add("moderator_id" to moderatorId)
-                add("status" to status)
+                add("status" to status.value)
                 userId?.let { add("user_id" to it) }
                 cursor?.let { add("after" to it) }
             }
@@ -328,7 +330,7 @@ class ModerationResource internal constructor(
         broadcasterId: String,
         moderatorId: String,
         unbanRequestId: String,
-        status: String,
+        status: UnbanRequestStatus,
         resolutionText: String? = null,
     ): UnbanRequestResponse {
         http.validateScopes(TwitchScope.MODERATOR_MANAGE_UNBAN_REQUESTS)
@@ -340,7 +342,7 @@ class ModerationResource internal constructor(
                         add("broadcaster_id" to broadcasterId)
                         add("moderator_id" to moderatorId)
                         add("unban_request_id" to unbanRequestId)
-                        add("status" to status)
+                        add("status" to status.value)
                         resolutionText?.let { add("resolution_text" to it) }
                     },
             ).requireFirst("moderation/unban_requests")

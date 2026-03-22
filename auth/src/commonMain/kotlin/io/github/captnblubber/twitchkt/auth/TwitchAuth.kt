@@ -1,6 +1,6 @@
 package io.github.captnblubber.twitchkt.auth
 
-import io.github.captnblubber.twitchkt.error.TwitchApiException
+import io.github.captnblubber.twitchkt.error.mapTwitchApiError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.submitForm
@@ -49,7 +49,7 @@ class TwitchAuth(
                     },
             )
         if (response.status.value !in 200..299) {
-            throw mapError(response.status.value, response.bodyAsText())
+            throw mapTwitchApiError(response.status.value, response.bodyAsText())
         }
         return response.body()
     }
@@ -67,7 +67,7 @@ class TwitchAuth(
                     },
             )
         if (response.status.value !in 200..299) {
-            throw mapError(response.status.value, response.bodyAsText())
+            throw mapTwitchApiError(response.status.value, response.bodyAsText())
         }
         return response.body()
     }
@@ -78,19 +78,8 @@ class TwitchAuth(
                 header("Authorization", "OAuth $accessToken")
             }
         if (response.status.value !in 200..299) {
-            throw mapError(response.status.value, response.bodyAsText())
+            throw mapTwitchApiError(response.status.value, response.bodyAsText())
         }
         return response.body()
     }
-
-    private fun mapError(
-        statusCode: Int,
-        body: String,
-    ): TwitchApiException =
-        when (statusCode) {
-            400 -> TwitchApiException.BadRequest(body)
-            401 -> TwitchApiException.Unauthorized(body)
-            403 -> TwitchApiException.Forbidden(body)
-            else -> TwitchApiException.ServerError(statusCode, body)
-        }
 }

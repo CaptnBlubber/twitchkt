@@ -97,7 +97,7 @@ class EventSubIntegrationTest :
 
         fun createEventSub(httpClient: HttpClient): TwitchEventSub {
             val helix = TwitchHelix(httpClient, config)
-            return TwitchEventSub(httpClient, config, helix.subscriptions)
+            return TwitchEventSub(httpClient, config, helix.eventSub)
         }
 
         suspend fun subscribeAndVerify(
@@ -186,7 +186,7 @@ class EventSubIntegrationTest :
         val moderator = "1"
 
         // All Twitch CLI-supported EventSub event types mapped to their expected domain models.
-        // Each test connects, subscribes via ktwitch's SubscriptionResource, triggers, and verifies.
+        // Each test connects, subscribes via ktwitch's EventSubResource, triggers, and verifies.
         @Suppress("LongMethod")
         listOf(
             // Subscriptions & Gifts
