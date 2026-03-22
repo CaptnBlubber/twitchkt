@@ -979,6 +979,69 @@ class ChatResourceTest :
             }
         }
 
+        Given("updateSettings - with additional optional params") {
+
+            When("called with all optional settings") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "broadcaster_id": "123",
+                                            "slow_mode": false,
+                                            "follower_mode": true,
+                                            "follower_mode_duration": 30,
+                                            "subscriber_mode": true,
+                                            "emote_mode": true,
+                                            "unique_chat_mode": true,
+                                            "non_moderator_chat_delay": true,
+                                            "non_moderator_chat_delay_duration": 4
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val settings =
+                    resource.updateSettings(
+                        broadcasterId = "123",
+                        moderatorId = "456",
+                        followerMode = true,
+                        followerModeDuration = 30,
+                        subscriberMode = true,
+                        emoteMode = true,
+                        uniqueChatMode = true,
+                        nonModeratorChatDelay = true,
+                        nonModeratorChatDelayDuration = 4,
+                    )
+
+                Then("it should use PATCH method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Patch
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+
+                Then("it should deserialize the updated settings") {
+                    settings.followerMode shouldBe true
+                    settings.subscriberMode shouldBe true
+                    settings.emoteMode shouldBe true
+                    settings.uniqueChatMode shouldBe true
+                    settings.nonModeratorChatDelay shouldBe true
+                    settings.nonModeratorChatDelayDuration shouldBe 4
+                }
+            }
+        }
+
         Given("sendAnnouncement") {
 
             When("called with required parameters") {

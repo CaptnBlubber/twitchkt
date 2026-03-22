@@ -484,6 +484,44 @@ class RewardResourceTest :
             }
         }
 
+        Given("getAllRedemptions - with optional params") {
+
+            When("called with ids and sort parameters") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = redemptionLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource
+                    .getAllRedemptions(
+                        broadcasterId = "123",
+                        rewardId = "reward-1",
+                        status = RedemptionStatus.UNFULFILLED,
+                        ids = listOf("red-1", "red-2"),
+                        sort = RedemptionSort.NEWEST,
+                    ).toList()
+
+                Then("it should pass the ids parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("id") shouldBe listOf("red-1", "red-2")
+                }
+
+                Then("it should pass the sort parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["sort"] shouldBe "NEWEST"
+                }
+
+                Then("it should pass the status parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["status"] shouldBe "UNFULFILLED"
+                }
+            }
+        }
+
         Given("getRedemptions") {
 
             When("called without a cursor (first page)") {

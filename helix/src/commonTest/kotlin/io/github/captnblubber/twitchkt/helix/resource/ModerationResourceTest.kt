@@ -1440,6 +1440,42 @@ class ModerationResourceTest :
             }
         }
 
+        Given("ban - with duration (timed ban)") {
+
+            When("called with a duration parameter") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.ban(
+                    broadcasterId = "123",
+                    moderatorId = "100",
+                    userId = "456",
+                    reason = "timeout",
+                    duration = 600,
+                )
+
+                Then("it should call the moderation/bans endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/moderation/bans"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+            }
+        }
+
         Given("unban") {
 
             When("called with required parameters") {
@@ -1569,6 +1605,34 @@ class ModerationResourceTest :
                     result.id shouldBe "req-1"
                     result.status shouldBe "approved"
                     result.resolutionText shouldBe "ok"
+                }
+            }
+
+            When("called without resolutionText") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = resolvedUnbanRequestJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.resolveUnbanRequest(
+                    broadcasterId = "123",
+                    moderatorId = "100",
+                    unbanRequestId = "req-1",
+                    status = UnbanRequestStatus.DENIED,
+                )
+
+                Then("it should not include a resolution_text parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["resolution_text"] shouldBe null
+                }
+
+                Then("it should pass the status parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["status"] shouldBe "denied"
                 }
             }
         }

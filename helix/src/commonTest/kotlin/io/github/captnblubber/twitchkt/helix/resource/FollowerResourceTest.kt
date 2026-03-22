@@ -259,4 +259,81 @@ class FollowerResourceTest :
                 }
             }
         }
+
+        Given("getTotal") {
+
+            When("called with a broadcaster ID") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "total": 42,
+                                    "data": [
+                                        {
+                                            "user_id": "456",
+                                            "user_login": "follower",
+                                            "user_name": "Follower",
+                                            "followed_at": "2022-05-24T22:22:08Z"
+                                        }
+                                    ],
+                                    "pagination": {}
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val total = resource.getTotal(broadcasterId = "123")
+
+                Then("it should call the channels/followers endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/channels/followers"
+                }
+
+                Then("it should use GET method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Get
+                }
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should pass first=1 to minimize response size") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["first"] shouldBe "1"
+                }
+
+                Then("it should return the total count") {
+                    total shouldBe 42
+                }
+            }
+
+            When("called and total is absent from the response") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [],
+                                    "pagination": {}
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val total = resource.getTotal(broadcasterId = "123")
+
+                Then("it should return 0") {
+                    total shouldBe 0
+                }
+            }
+        }
     })

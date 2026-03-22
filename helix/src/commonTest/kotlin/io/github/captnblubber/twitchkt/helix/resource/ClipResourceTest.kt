@@ -492,6 +492,42 @@ class ClipResourceTest :
             }
         }
 
+        Given("getAllClips - with optional filters") {
+
+            When("called with all optional filter parameters") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = clipLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val start = Instant.parse("2024-01-01T00:00:00Z")
+                val end = Instant.parse("2024-01-31T00:00:00Z")
+                resource
+                    .getAllClips(
+                        broadcasterId = "456",
+                        gameId = "509658",
+                        ids = listOf("clip1"),
+                        startedAt = start,
+                        endedAt = end,
+                        isFeatured = true,
+                    ).toList()
+
+                Then("it should pass all filter parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "456"
+                    request.url.parameters["game_id"] shouldBe "509658"
+                    request.url.parameters["id"] shouldBe "clip1"
+                    request.url.parameters["started_at"] shouldBe "2024-01-01T00:00:00Z"
+                    request.url.parameters["ended_at"] shouldBe "2024-01-31T00:00:00Z"
+                    request.url.parameters["is_featured"] shouldBe "true"
+                }
+            }
+        }
+
         Given("get - pagination") {
 
             When("called without a cursor (first page)") {

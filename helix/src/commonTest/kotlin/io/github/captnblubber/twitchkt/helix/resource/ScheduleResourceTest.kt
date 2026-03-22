@@ -279,6 +279,45 @@ class ScheduleResourceTest :
             }
         }
 
+        Given("updateSegment - with all optional parameters") {
+
+            When("called with all optional fields") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.updateSegment(
+                    broadcasterId = "123",
+                    segmentId = "seg-1",
+                    startTime = "2023-04-20T20:00:00Z",
+                    timezone = "Europe/Berlin",
+                    duration = 180,
+                    isCanceled = true,
+                    categoryId = "509658",
+                    title = "Updated Title",
+                )
+
+                Then("it should pass the broadcaster_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["broadcaster_id"] shouldBe "123"
+                }
+
+                Then("it should pass the id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["id"] shouldBe "seg-1"
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+            }
+        }
+
         Given("deleteSegment") {
 
             When("called with broadcaster ID and segment ID") {

@@ -532,7 +532,7 @@ class StreamResourceTest :
                 }
                 """.trimIndent()
 
-            When("createStreamMarker is called") {
+            When("createStreamMarker is called with description") {
                 val engine =
                     MockEngine {
                         respond(
@@ -563,6 +563,74 @@ class StreamResourceTest :
                     marker.id shouldBe "marker-1"
                     marker.positionSeconds shouldBe 300
                     marker.description shouldBe "highlight"
+                }
+            }
+
+            When("createStreamMarker is called without description") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = createdMarkerJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.createStreamMarker(userId = "123")
+
+                Then("it should call the streams/markers endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/streams/markers"
+                }
+
+                Then("it should use POST method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Post
+                }
+            }
+        }
+
+        Given("getAllStreamMarkers - with optional params") {
+
+            When("getAllStreamMarkers is called with a videoId") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = markerLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getAllStreamMarkers(videoId = "v-1").toList()
+
+                Then("it should pass the video_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["video_id"] shouldBe "v-1"
+                }
+
+                Then("it should not include a user_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe null
+                }
+            }
+
+            When("getAllStreamMarkers is called with both userId and videoId") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = markerLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.getAllStreamMarkers(userId = "123", videoId = "v-1").toList()
+
+                Then("it should pass both user_id and video_id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["user_id"] shouldBe "123"
+                    request.url.parameters["video_id"] shouldBe "v-1"
                 }
             }
         }

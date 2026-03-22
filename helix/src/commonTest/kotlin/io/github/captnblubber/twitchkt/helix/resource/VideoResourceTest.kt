@@ -245,5 +245,107 @@ class VideoResourceTest :
                     request.url.parameters["type"] shouldBe "archive"
                 }
             }
+
+            When("called with gameId and video IDs") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = videoJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.get(
+                    ids = listOf("v-1", "v-2"),
+                    gameId = "509658",
+                )
+
+                Then("it should pass the game_id parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["game_id"] shouldBe "509658"
+                }
+
+                Then("it should pass multiple id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("id") shouldBe listOf("v-1", "v-2")
+                }
+            }
+        }
+
+        Given("delete") {
+
+            When("called with video IDs") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": ["v-1", "v-2"]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val deleted = resource.delete(ids = listOf("v-1", "v-2"))
+
+                Then("it should call the videos endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/videos"
+                }
+
+                Then("it should use DELETE method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Delete
+                }
+
+                Then("it should pass multiple id parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters.getAll("id") shouldBe listOf("v-1", "v-2")
+                }
+
+                Then("it should return the deleted video IDs") {
+                    deleted shouldBe listOf("v-1", "v-2")
+                }
+            }
+        }
+
+        Given("getAllVideos - with optional filters") {
+
+            When("called with all optional filter parameters") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = videoLastPageJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource
+                    .getAllVideos(
+                        ids = listOf("v-1"),
+                        userId = "456",
+                        gameId = "509658",
+                        language = "en",
+                        period = VideoPeriod.MONTH,
+                        sort = VideoSort.TRENDING,
+                        type = VideoType.HIGHLIGHT,
+                    ).toList()
+
+                Then("it should pass all filter parameters") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["id"] shouldBe "v-1"
+                    request.url.parameters["user_id"] shouldBe "456"
+                    request.url.parameters["game_id"] shouldBe "509658"
+                    request.url.parameters["language"] shouldBe "en"
+                    request.url.parameters["period"] shouldBe "month"
+                    request.url.parameters["sort"] shouldBe "trending"
+                    request.url.parameters["type"] shouldBe "highlight"
+                }
+            }
         }
     })

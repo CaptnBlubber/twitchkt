@@ -671,4 +671,111 @@ class UserResourceTest :
                 }
             }
         }
+
+        Given("updateActiveExtensions") {
+
+            val activeExtensionsJson =
+                """
+                {
+                    "data": {
+                        "panel": {
+                            "1": {
+                                "active": true,
+                                "id": "ext-1",
+                                "version": "1.0",
+                                "name": "Panel Ext"
+                            }
+                        },
+                        "overlay": {},
+                        "component": {}
+                    }
+                }
+                """.trimIndent()
+
+            When("called with extensions to update") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = activeExtensionsJson,
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                val input =
+                    io.github.captnblubber.twitchkt.helix.model.ActiveExtensions(
+                        panel =
+                            mapOf(
+                                "1" to
+                                    io.github.captnblubber.twitchkt.helix.model.ActiveExtensionSlot(
+                                        active = true,
+                                        id = "ext-1",
+                                        version = "1.0",
+                                        name = "Panel Ext",
+                                    ),
+                            ),
+                    )
+                val result = resource.updateActiveExtensions(extensions = input)
+
+                Then("it should call the users/extensions endpoint") {
+                    val request = engine.requestHistory.first()
+                    request.url.encodedPath shouldBe "/helix/users/extensions"
+                }
+
+                Then("it should use PUT method") {
+                    val request = engine.requestHistory.first()
+                    request.method shouldBe HttpMethod.Put
+                }
+
+                Then("it should set Content-Type to application/json") {
+                    val request = engine.requestHistory.first()
+                    request.body.contentType?.toString() shouldBe "application/json"
+                }
+
+                Then("it should deserialize the updated active extensions") {
+                    result.panel.size shouldBe 1
+                    result.panel["1"]?.active shouldBe true
+                    result.panel["1"]?.id shouldBe "ext-1"
+                    result.panel["1"]?.name shouldBe "Panel Ext"
+                }
+            }
+        }
+
+        Given("updateUser - without description") {
+
+            When("called without a description") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """
+                                {
+                                    "data": [
+                                        {
+                                            "id": "123",
+                                            "login": "testuser",
+                                            "display_name": "TestUser",
+                                            "type": "",
+                                            "broadcaster_type": "affiliate",
+                                            "description": "",
+                                            "profile_image_url": "https://example.com/img.png",
+                                            "offline_image_url": "",
+                                            "created_at": "2020-01-01T00:00:00Z"
+                                        }
+                                    ]
+                                }
+                                """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                            headers = JSON_HEADERS,
+                        )
+                    }
+                val resource = createResource(engine)
+                resource.updateUser()
+
+                Then("it should not include a description parameter") {
+                    val request = engine.requestHistory.first()
+                    request.url.parameters["description"] shouldBe null
+                }
+            }
+        }
     })
