@@ -18,6 +18,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
             val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
             extensions.configure<KotlinMultiplatformExtension> {
+                // JVM
                 jvm {
                     testRuns.named("test") {
                         executionTask.configure {
@@ -26,6 +27,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
                     }
                 }
 
+                // JS
                 js(IR) {
                     browser {
                         testTask {
@@ -34,6 +36,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
                     }
                 }
 
+                // Wasm
                 @OptIn(ExperimentalWasmDsl::class)
                 wasmJs {
                     browser {
@@ -42,6 +45,33 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
                         }
                     }
                 }
+
+                // iOS
+                iosX64()
+                iosArm64()
+                iosSimulatorArm64()
+
+                // macOS
+                macosX64()
+                macosArm64()
+
+                // tvOS
+                tvosX64()
+                tvosArm64()
+                tvosSimulatorArm64()
+
+                // watchOS
+                watchosX64()
+                watchosArm32()
+                watchosArm64()
+                watchosSimulatorArm64()
+
+                // Linux
+                linuxX64()
+                linuxArm64()
+
+                // Windows
+                mingwX64()
 
                 sourceSets.commonTest.dependencies {
                     implementation(libs.findLibrary("kotest-assertions-core").get())
