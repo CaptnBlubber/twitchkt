@@ -615,30 +615,6 @@ class EventSubParserTest :
             }
         }
 
-        Given("a message with an unknown message_type value") {
-
-            val unknownMessageTypeJson =
-                """
-                {
-                    "metadata": {
-                        "message_type": "unknown_type",
-                        "message_id": "1",
-                        "message_timestamp": "2024-01-01T00:00:00Z"
-                    },
-                    "payload": {}
-                }
-                """.trimIndent()
-
-            When("parsing the message") {
-                val result = parser.parse(unknownMessageTypeJson)
-
-                Then("it should return a Notification with an UnknownEvent") {
-                    val notification = result.shouldBeInstanceOf<ParsedMessage.Notification>()
-                    notification.event.shouldBeInstanceOf<UnknownEvent>()
-                }
-            }
-        }
-
         Given("an unknown message type") {
 
             val unknownTypeJson =
