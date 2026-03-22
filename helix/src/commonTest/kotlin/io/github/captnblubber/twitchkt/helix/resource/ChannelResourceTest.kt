@@ -1,9 +1,13 @@
 package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.TwitchKtConfig
+import io.github.captnblubber.twitchkt.auth.ScopeProvider
 import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.auth.TwitchScope
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
 import io.github.captnblubber.twitchkt.helix.model.UpdateChannelRequest
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -393,6 +397,142 @@ class ChannelResourceTest :
                 Then("it should pass the pageSize as the first parameter") {
                     val request = engine.requestHistory.first()
                     request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
+        Given("getInformation error paths") {
+
+            When("the API returns an empty data array") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"data": []}""",
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw EmptyResponse") {
+                    shouldThrow<TwitchApiException.EmptyResponse> {
+                        resource.getInformation("456")
+                    }
+                }
+            }
+
+            When("the API returns 401 Unauthorized") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Unauthorized","message":"Invalid token"}""",
+                            status = HttpStatusCode.Unauthorized,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Unauthorized") {
+                    shouldThrow<TwitchApiException.Unauthorized> {
+                        resource.getInformation("456")
+                    }
+                }
+            }
+        }
+
+        Given("update error paths") {
+
+            When("the API returns 400 Bad Request") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Bad Request","message":"Invalid request"}""",
+                            status = HttpStatusCode.BadRequest,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw BadRequest") {
+                    shouldThrow<TwitchApiException.BadRequest> {
+                        resource.update("456", UpdateChannelRequest(title = "New Title"))
+                    }
+                }
+            }
+
+            When("the scope validation fails") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.NoContent,
+                        )
+                    }
+                val httpClient =
+                    HttpClient(engine) {
+                        install(ContentNegotiation) {
+                            json(Json { ignoreUnknownKeys = true })
+                        }
+                    }
+                val config =
+                    TwitchKtConfig(
+                        clientId = testClientId,
+                        tokenProvider = TokenProvider { testToken },
+                        scopeProvider = ScopeProvider { setOf(TwitchScope.BITS_READ) },
+                    )
+                val resource = ChannelResource(HelixHttpClient(httpClient, config))
+
+                Then("it should throw MissingScope") {
+                    shouldThrow<TwitchApiException.MissingScope> {
+                        resource.update("456", UpdateChannelRequest(title = "New Title"))
+                    }
+                }
+            }
+        }
+
+        Given("getFollowedChannels error paths") {
+
+            When("the API returns 401 Unauthorized") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Unauthorized","message":"Invalid token"}""",
+                            status = HttpStatusCode.Unauthorized,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Unauthorized") {
+                    shouldThrow<TwitchApiException.Unauthorized> {
+                        resource.getFollowedChannels(userId = "123")
+                    }
+                }
+            }
+        }
+
+        Given("getAllFollowedChannels error paths") {
+
+            When("the API returns 500 on the first page") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Internal Server Error","message":"Something went wrong"}""",
+                            status = HttpStatusCode.InternalServerError,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw ServerError when collecting the flow") {
+                    shouldThrow<TwitchApiException.ServerError> {
+                        resource.getAllFollowedChannels(userId = "123").toList()
+                    }
                 }
             }
         }

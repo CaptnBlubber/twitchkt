@@ -2,7 +2,10 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.github.captnblubber.twitchkt.helix.model.SendChatMessageRequest
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -440,6 +443,104 @@ class ChatResourceTest :
 
                 Then("cursor should be null") {
                     page.cursor.shouldBeNull()
+                }
+            }
+        }
+
+        Given("getChatters error paths") {
+
+            When("the API returns 403 Forbidden") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Forbidden","message":"Access denied"}""",
+                            status = HttpStatusCode.Forbidden,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Forbidden") {
+                    shouldThrow<TwitchApiException.Forbidden> {
+                        resource.getChatters(broadcasterId = "123", moderatorId = "456")
+                    }
+                }
+            }
+        }
+
+        Given("sendMessage error paths") {
+
+            When("the API returns 401 Unauthorized") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Unauthorized","message":"Invalid token"}""",
+                            status = HttpStatusCode.Unauthorized,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Unauthorized") {
+                    shouldThrow<TwitchApiException.Unauthorized> {
+                        resource.sendMessage(
+                            SendChatMessageRequest(
+                                broadcasterId = "123",
+                                senderId = "456",
+                                message = "Hello",
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+        Given("getSettings error paths") {
+
+            When("the API returns empty data") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"data": []}""",
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw EmptyResponse") {
+                    shouldThrow<TwitchApiException.EmptyResponse> {
+                        resource.getSettings(broadcasterId = "123")
+                    }
+                }
+            }
+        }
+
+        Given("getAllChatters error paths") {
+
+            When("the API returns 429 Rate Limited") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Too Many Requests","message":"Rate limit exceeded"}""",
+                            status = HttpStatusCode.TooManyRequests,
+                            headers =
+                                headersOf(
+                                    HttpHeaders.ContentType to listOf("application/json"),
+                                    "Ratelimit-Reset" to listOf("9999999999"),
+                                ),
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw RateLimited when collecting the flow") {
+                    shouldThrow<TwitchApiException.RateLimited> {
+                        resource.getAllChatters(broadcasterId = "123", moderatorId = "456").toList()
+                    }
                 }
             }
         }
