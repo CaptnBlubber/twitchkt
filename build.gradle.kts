@@ -7,6 +7,7 @@ plugins {
 dependencies {
     subprojects.forEach { subproject ->
         if (subproject.path != ":bom" && !subproject.path.startsWith(":samples")) {
+            dokka(subproject)
             kover(subproject)
         }
     }
