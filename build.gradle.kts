@@ -16,24 +16,22 @@ kover {
     reports {
         filters {
             excludes {
-                // Data models — pure serialization containers with no logic
+                // Data model packages — pure serialization containers with no logic
                 packages(
                     "io.github.captnblubber.twitchkt.helix.model",
                     "io.github.captnblubber.twitchkt.eventsub.model",
                     "io.github.captnblubber.twitchkt.eventsub.protocol",
                     "io.github.captnblubber.twitchkt.eventsub.internal",
                     "io.github.captnblubber.twitchkt.model.common",
+                    "io.github.captnblubber.twitchkt.irc.internal",
                 )
-                // Internal response wrapper
-                classes("io.github.captnblubber.twitchkt.helix.internal.TwitchResponse*")
-                // IRC message sealed hierarchy and internal parser models
+                // EventSub subscription type definitions — sealed class with 60+ data class entries
+                classes("io.github.captnblubber.twitchkt.eventsub.EventSubSubscriptionType*")
+                // WebSocket connection managers — tested via integration tests
+                classes("io.github.captnblubber.twitchkt.eventsub.TwitchEventSub*")
+                classes("io.github.captnblubber.twitchkt.irc.TwitchIrc*")
+                // IRC message sealed hierarchy
                 classes("io.github.captnblubber.twitchkt.irc.IrcMessage*")
-                packages("io.github.captnblubber.twitchkt.irc.internal")
-                // Auth response DTOs
-                classes(
-                    "io.github.captnblubber.twitchkt.auth.TokenResponse",
-                    "io.github.captnblubber.twitchkt.auth.ValidationResponse",
-                )
             }
         }
     }
