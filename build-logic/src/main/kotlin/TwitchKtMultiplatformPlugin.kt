@@ -15,6 +15,7 @@ class TwitchKtMultiplatformPlugin : Plugin<Project> {
             apply(plugin = "com.google.devtools.ksp")
             apply(plugin = "io.kotest")
             apply(plugin = "org.jetbrains.dokka")
+            apply(plugin = "org.jetbrains.kotlinx.kover")
             apply(plugin = "twitchkt.spotless")
 
             val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")

@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/CaptnBlubber/twitchkt/actions/workflows/ci.yml/badge.svg)](https://github.com/CaptnBlubber/twitchkt/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.captnblubber/twitchkt-core)](https://central.sonatype.com/namespace/io.github.captnblubber)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.3.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Coverage](https://img.shields.io/badge/coverage-27%25-yellow)](build/reports/kover/html/index.html)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
 Kotlin Multiplatform Twitch API library. Provides typed, coroutine-native clients for Twitch OAuth2, Helix REST API, EventSub WebSocket, and IRC.

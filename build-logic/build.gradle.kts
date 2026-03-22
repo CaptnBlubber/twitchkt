@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.plugin.dokka)
     implementation(libs.plugin.ksp)
     implementation(libs.plugin.kotest)
+    implementation(libs.plugin.kover)
 }
 
 tasks {
