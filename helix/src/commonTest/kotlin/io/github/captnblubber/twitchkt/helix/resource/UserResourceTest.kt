@@ -2,7 +2,9 @@ package io.github.captnblubber.twitchkt.helix.resource
 
 import io.github.captnblubber.twitchkt.TwitchKtConfig
 import io.github.captnblubber.twitchkt.auth.TokenProvider
+import io.github.captnblubber.twitchkt.error.TwitchApiException
 import io.github.captnblubber.twitchkt.helix.internal.HelixHttpClient
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
@@ -332,6 +334,113 @@ class UserResourceTest :
                 Then("it should pass the pageSize as the first parameter") {
                     val request = engine.requestHistory.first()
                     request.url.parameters["first"] shouldBe "50"
+                }
+            }
+        }
+
+        Given("getUsers error paths") {
+
+            When("the API returns 401 Unauthorized") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Unauthorized","message":"Invalid token"}""",
+                            status = HttpStatusCode.Unauthorized,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Unauthorized") {
+                    shouldThrow<TwitchApiException.Unauthorized> {
+                        resource.getUsers(ids = listOf("123"))
+                    }
+                }
+            }
+        }
+
+        Given("updateUser error paths") {
+
+            When("the API returns empty data") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"data": []}""",
+                            status = HttpStatusCode.OK,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw EmptyResponse") {
+                    shouldThrow<TwitchApiException.EmptyResponse> {
+                        resource.updateUser(description = "new desc")
+                    }
+                }
+            }
+
+            When("the API returns 400 Bad Request") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Bad Request","message":"Invalid request"}""",
+                            status = HttpStatusCode.BadRequest,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw BadRequest") {
+                    shouldThrow<TwitchApiException.BadRequest> {
+                        resource.updateUser(description = "new desc")
+                    }
+                }
+            }
+        }
+
+        Given("blockUser error paths") {
+
+            When("the API returns 403 Forbidden") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Forbidden","message":"Access denied"}""",
+                            status = HttpStatusCode.Forbidden,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw Forbidden") {
+                    shouldThrow<TwitchApiException.Forbidden> {
+                        resource.blockUser(targetUserId = "456")
+                    }
+                }
+            }
+        }
+
+        Given("unblockUser error paths") {
+
+            When("the API returns 404 Not Found") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content =
+                                """{"error":"Not Found","message":"User not found"}""",
+                            status = HttpStatusCode.NotFound,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val resource = createResource(engine)
+
+                Then("it should throw NotFound") {
+                    shouldThrow<TwitchApiException.NotFound> {
+                        resource.unblockUser(targetUserId = "456")
+                    }
                 }
             }
         }

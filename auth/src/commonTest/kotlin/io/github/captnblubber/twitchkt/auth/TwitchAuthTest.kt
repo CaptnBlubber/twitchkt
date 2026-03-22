@@ -282,6 +282,144 @@ class TwitchAuthTest :
             }
         }
 
+        // --- exchangeCode error paths ---
+
+        Given("a server error during code exchange") {
+
+            When("the server returns 500") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":500,"message":"Internal Server Error"}""",
+                            status = HttpStatusCode.InternalServerError,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.ServerError with statusCode 500") {
+                    val exception =
+                        shouldThrow<TwitchApiException.ServerError> {
+                            auth.exchangeCode("some-code", "http://localhost:3000/callback")
+                        }
+                    exception.statusCode shouldBe 500
+                }
+            }
+        }
+
+        Given("a forbidden response during code exchange") {
+
+            When("the server returns 403") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":403,"message":"Forbidden"}""",
+                            status = HttpStatusCode.Forbidden,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.Forbidden") {
+                    shouldThrow<TwitchApiException.Forbidden> {
+                        auth.exchangeCode("some-code", "http://localhost:3000/callback")
+                    }
+                }
+            }
+        }
+
+        // --- refresh error paths ---
+
+        Given("a server error during refresh") {
+
+            When("the server returns 500") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":500,"message":"Internal Server Error"}""",
+                            status = HttpStatusCode.InternalServerError,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.ServerError") {
+                    val exception =
+                        shouldThrow<TwitchApiException.ServerError> {
+                            auth.refresh("some-token")
+                        }
+                    exception.statusCode shouldBe 500
+                }
+            }
+        }
+
+        Given("a forbidden response during refresh") {
+
+            When("the server returns 403") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":403,"message":"Forbidden"}""",
+                            status = HttpStatusCode.Forbidden,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.Forbidden") {
+                    shouldThrow<TwitchApiException.Forbidden> {
+                        auth.refresh("some-token")
+                    }
+                }
+            }
+        }
+
+        // --- validate error paths ---
+
+        Given("a server error during validation") {
+
+            When("the server returns 500") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":500,"message":"Internal Server Error"}""",
+                            status = HttpStatusCode.InternalServerError,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.ServerError") {
+                    val exception =
+                        shouldThrow<TwitchApiException.ServerError> {
+                            auth.validate("some-token")
+                        }
+                    exception.statusCode shouldBe 500
+                }
+            }
+        }
+
+        Given("a forbidden response during validation") {
+
+            When("the server returns 403") {
+                val engine =
+                    MockEngine {
+                        respond(
+                            content = """{"status":403,"message":"Forbidden"}""",
+                            status = HttpStatusCode.Forbidden,
+                            headers = jsonHeaders,
+                        )
+                    }
+                val auth = createAuth(engine)
+
+                Then("it should throw TwitchApiException.Forbidden") {
+                    shouldThrow<TwitchApiException.Forbidden> {
+                        auth.validate("some-token")
+                    }
+                }
+            }
+        }
+
         Given("an expired access token") {
 
             When("the server rejects validation") {

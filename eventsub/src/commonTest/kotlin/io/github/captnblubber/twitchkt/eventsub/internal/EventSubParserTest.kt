@@ -6,6 +6,7 @@ import io.github.captnblubber.twitchkt.eventsub.model.ChannelSubscriptionGift
 import io.github.captnblubber.twitchkt.eventsub.model.ChannelUpdate
 import io.github.captnblubber.twitchkt.eventsub.model.StreamOnline
 import io.github.captnblubber.twitchkt.eventsub.model.UnknownEvent
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -572,6 +573,44 @@ class EventSubParserTest :
                 Then("the unknown event should have the correct message id") {
                     val unknown = (result as ParsedMessage.Notification).event as UnknownEvent
                     unknown.messageId shouldBe "unknown-msg-001"
+                }
+            }
+        }
+
+        // --- parser error paths ---
+
+        Given("an empty string input") {
+
+            When("parsing the empty string") {
+
+                Then("it should throw an exception") {
+                    shouldThrow<Exception> {
+                        parser.parse("")
+                    }
+                }
+            }
+        }
+
+        Given("invalid JSON input") {
+
+            When("parsing non-JSON text") {
+
+                Then("it should throw an exception") {
+                    shouldThrow<Exception> {
+                        parser.parse("not json at all")
+                    }
+                }
+            }
+        }
+
+        Given("valid JSON but missing message_type") {
+
+            When("parsing JSON without required metadata fields") {
+
+                Then("it should throw an exception") {
+                    shouldThrow<Exception> {
+                        parser.parse("""{"metadata":{},"payload":{}}""")
+                    }
                 }
             }
         }
