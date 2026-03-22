@@ -23,8 +23,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
       - name: Generate Dokka docs
         run: ./gradlew dokkaGeneratePublicationHtml
+      - name: Generate coverage report
+        run: ./gradlew koverHtmlReport
+      - name: Add coverage report to docs
+        run: cp -r build/reports/kover/html build/dokka/html/coverage
       - uses: actions/upload-pages-artifact@v4
         with:
           path: build/dokka/html

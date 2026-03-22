@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -20,3 +24,10 @@ jobs:
         run: ./gradlew spotlessCheck
       - name: Run tests
         run: ./gradlew allTests
+      - name: Test report
+        uses: dorny/test-reporter@v2
+        if: always()
+        with:
+          name: Test Results
+          path: '**/build/test-results/jvmTest/TEST-*.xml'
+          reporter: java-junit
