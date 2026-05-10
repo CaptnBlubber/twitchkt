@@ -45,7 +45,7 @@ If you only need specific parts of the library, declare them directly with an ex
 
 ```kotlin
 dependencies {
-    val twitchKtVersion = "0.1.0-alpha01"
+    val twitchKtVersion = "1.0.0"
     implementation("io.github.captnblubber:twitchkt-helix:$twitchKtVersion")      // Helix REST API
     implementation("io.github.captnblubber:twitchkt-eventsub:$twitchKtVersion")   // EventSub WebSocket
     implementation("io.github.captnblubber:twitchkt-auth:$twitchKtVersion")       // OAuth2 flows
@@ -67,7 +67,7 @@ Alternatively, use the BOM to align all module versions and omit version numbers
 ```kotlin
 dependencies {
     // BOM — manages all twitchkt module versions
-    implementation(platform("io.github.captnblubber:twitchkt-bom:0.1.0-alpha01"))
+    implementation(platform("io.github.captnblubber:twitchkt-bom:1.0.0"))
 
     // TwitchKt modules (no version needed with BOM)
     implementation("io.github.captnblubber:twitchkt-helix")

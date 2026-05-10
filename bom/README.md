@@ -6,7 +6,7 @@ Bill of Materials (BOM) for the TwitchKt library. Aligns versions of all TwitchK
 
 ```kotlin
 dependencies {
-    implementation(platform("io.github.captnblubber:twitchkt-bom:0.1.0-alpha01"))
+    implementation(platform("io.github.captnblubber:twitchkt-bom:1.0.0"))
     implementation("io.github.captnblubber:twitchkt-helix")    // version managed by BOM
     implementation("io.github.captnblubber:twitchkt-eventsub")  // version managed by BOM
 }
