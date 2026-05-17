@@ -1,6 +1,6 @@
 [versions]
 kotest = "6.1.2"
-ksp = "2.3.7"
+ksp = "2.3.8"
 mockk = "1.14.9"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.11.0"
